@@ -1,44 +1,89 @@
-import httpx
 from typing import AsyncIterator, Dict, Any
 from .base import LLMProvider
 from ..config import settings
+from openai import AsyncOpenAI
 
 
-class OllamaProvider(LLMProvider):
-    name = "ollama"
+class LlamaProvider(LLMProvider):
+    name = "llama"
 
-    def __init__(self, base_url: str | None = None):
-        self.base_url = base_url or (settings.OLLAMA_BASE_URL or "http://localhost:11434")
+    def __init__(
+        self,
+        *,
+        api_key: str,
+        base_url: str,
+        default_model: str | None = None,
+    ) -> None:
+        self.client = AsyncOpenAI(api_key=api_key, base_url=base_url)
+        self.default_model = default_model
 
-    async def chat(self, *, messages: list[dict], model: str, **kwargs) -> Dict[str, Any]:
-        async with httpx.AsyncClient(timeout=None) as client:
-            r = await client.post(
-                f"{self.base_url}/chat/completions",
-                json={"model": model, "messages": messages, "stream": False},
-            )
-            r.raise_for_status()
-            return r.json()
+    async def chat(
+        self,
+        *,
+        messages: list[dict],
+        model: str,
+        **kwargs: Any,
+    ) -> Dict[str, Any]:
+        mdl = model or self.default_model
+        if not mdl:
+            raise ValueError("model is required")
 
-    async def stream(self, *, messages: list[dict], model: str, **kwargs) -> AsyncIterator[str]:
-        prompt = "\n".join(
-            [m["content"] for m in messages if m["role"] in ("system", "user")]
+        resp = await self.client.chat.completions.create(
+            model=mdl,
+            messages=messages,
+            **kwargs,
         )
-        async with httpx.AsyncClient(timeout=None) as client:
-            async with client.stream(
-                "POST",
-                f"{self.base_url}/api/generate",
-                json={"model": model, "prompt": prompt, "stream": True},
-            ) as r:
-                r.raise_for_status()
-                async for line in r.aiter_lines():
-                    if not line:
-                        continue
-                    try:
-                        obj = r.json_loader(line)
-                        part = obj.get("response")
-                        if part:
-                            yield part
-                        if obj.get("done"):
-                            break
-                    except Exception:
-                        continue
+
+        choice = resp.choices[0]
+        msg = choice.message
+        usage = resp.usage
+
+        return {
+            "message": {
+                "role": msg.role,
+                "content": msg.content,
+            },
+            "usage": {
+                "prompt_tokens": getattr(usage, "prompt_tokens", None),
+                "completion_tokens": getattr(usage, "completion_tokens", None),
+                "total_tokens": getattr(usage, "total_tokens", None),
+                "cost": None,
+            },
+            "raw": resp.model_dump(),
+        }
+
+    async def stream(
+        self,
+        *,
+        messages: list[dict],
+        model: str,
+        **kwargs: Any,
+    ) -> AsyncIterator[str]:
+        mdl = model or self.default_model
+        if not mdl:
+            raise ValueError("model is required")
+
+        stream = await self.client.chat.completions.create(
+            model=mdl,
+            messages=messages,
+            stream=True,
+            **kwargs,
+        )
+
+        async for chunk in stream:
+            delta = chunk.choices[0].delta
+            if delta.content:
+                yield delta.content
+
+    def count_tokens(
+        self,
+        *,
+        messages: list[dict],
+        model: str,
+    ) -> Dict[str, int]:
+        prompt_tokens = approx_token_count_from_messages(messages)
+        return {
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": 0,
+            "total_tokens": prompt_tokens,
+        }

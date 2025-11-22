@@ -1,6 +1,8 @@
+import uuid
 from typing import List, Dict, Any
 
-from sqlalchemy import String, DateTime, JSON, ForeignKey, Integer, Text
+from sqlalchemy import String, DateTime, JSON, ForeignKey, Integer, Text, UUID, Float
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship, Mapped, mapped_column, Session
 from datetime import datetime, timezone
 
@@ -10,47 +12,61 @@ from app.db import Base
 
 class Conversation(Base):
     __tablename__ = "conversations"
-    id: Mapped[str] = mapped_column(String, primary_key=True)
-    user_id: Mapped[int] = mapped_column(Integer, index=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-    )
-    title: Mapped[str | None] = mapped_column(String, nullable=True)
-    messages: Mapped[list["Message"]] = relationship(back_populates="conversation")
-    system_prompt: Mapped[str] = mapped_column(String, default=settings.SYSTEM_PROMPT)
 
-    def get_messages(self, new_messages):
-        msgs: List[dict] = [{
-            'role': 'system',
-            'content': self.system_prompt
-        }]
-        for message in self.messages:
-            msgs.append(message.get_message_object())
-        for message in new_messages:
-            msgs.append(message.get_message_object())
-        return msgs
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    user_id: Mapped[str] = mapped_column(String, index=True)
+
+    title: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=datetime.utcnow
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+
+    total_prompt_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    total_completion_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    total_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    total_cost: Mapped[float] = mapped_column(Float, default=0.0)
+
+    messages: Mapped[list["Message"]] = relationship(
+        back_populates="conversation",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
 
 
 class Message(Base):
     __tablename__ = "messages"
 
-    id: Mapped[str] = mapped_column(String, primary_key=True)
-    conversation_id: Mapped[str] = mapped_column(
-        String, ForeignKey("conversations.id"), index=True
-    )
-    role: Mapped[str] = mapped_column(String)
-    content: Mapped[Any | None] = mapped_column(JSON, nullable=True)
-    name: Mapped[str | None] = mapped_column(String, nullable=True)
-    tool_call_id: Mapped[str | None] = mapped_column(String, nullable=True)
-    tool_calls: Mapped[dict | None] = mapped_column(JSON, nullable=True)
-    meta: Mapped[dict | None] = mapped_column(JSON, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
 
+    conversation_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("conversations.id", ondelete="CASCADE"), index=True
+    )
     conversation: Mapped[Conversation] = relationship(back_populates="messages")
+
+    role: Mapped[str] = mapped_column(String, index=True)  # system/user/assistant/tool
+    content: Mapped[Any] = mapped_column(JSONB)  # str или сложная структура
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=datetime.utcnow, index=True
+    )
+
+    provider_name: Mapped[str | None] = mapped_column(String, nullable=True)
+    model: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    prompt_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    completion_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    total_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    cost: Mapped[float | None] = mapped_column(Float, nullable=True)
+
+    meta: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
     def get_message_object(self) -> Dict:
         msg: Dict[str, Any] = {'role': self.role}
