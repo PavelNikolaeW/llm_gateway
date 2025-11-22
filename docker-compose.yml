@@ -1,0 +1,32 @@
+version: "3.9"
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: gateway
+      POSTGRES_USER: gateway
+      POSTGRES_PASSWORD: gateway
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  gateway:
+    build: .
+    command: uvicorn app.main:app --host 0.0.0.0 --port 7998 --reload
+    environment:
+      PG_DSN: postgresql+asyncpg://gateway:gateway@postgres:5432/gateway
+      AUTH_VERIFY_URL: http://localhost:8000/api/v1/token/verify/
+      DATA_BASE_URL: http://localhost:8000/api/v1/
+      LLM_BASE_URL: https://api.openai.com/v1
+      LLM_API_KEY: ${LLM_API_KEY}
+      DEFAULT_MODEL: gpt-4o-mini
+      CORS_ORIGINS: http://localhost:8080
+      OLLAMA_BASE_URL: http://ollama:11434
+    depends_on:
+      - postgres
+    ports:
+      - "8080:8080"
+
+volumes:
+  pgdata: {}
