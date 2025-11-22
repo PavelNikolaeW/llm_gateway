@@ -1,26 +1,81 @@
+from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import AsyncIterator, Dict, Any
+from typing import Any, AsyncIterator, Dict, Protocol
 import fnmatch
+import math
+
+
+class Usage(Protocol):
+    prompt_tokens: int
+    completion_tokens: int
+    total_tokens: int
+    cost: float | None
 
 
 class LLMProvider(ABC):
-    """Generic LLM adapter interface.
-
-    Implement providers for OpenAI-compatible, Ollama, Anthropic, vLLM, etc.
-    """
-
     name: str = "base"
 
     @abstractmethod
-    async def chat(self, *, messages: list[dict], model: str, **kwargs) -> Dict[str, Any]:
+    async def chat(
+        self,
+        *,
+        messages: list[dict],
+        model: str,
+        **kwargs: Any,
+    ) -> Dict[str, Any]:
+        """
+        Возвращает минимум:
+        {
+          "message": { "role": "assistant", "content": "..." },
+          "usage": {
+             "prompt_tokens": ...,
+             "completion_tokens": ...,
+             "total_tokens": ...,
+             "cost": ... (опционально)
+          },
+          "raw": ...
+        }
+        """
         ...
 
     @abstractmethod
-    async def stream(self, *, messages: list[dict], model: str, **kwargs) -> AsyncIterator[str]:
+    async def stream(
+        self,
+        *,
+        messages: list[dict],
+        model: str,
+        **kwargs: Any,
+    ) -> AsyncIterator[str]:
         ...
 
     def supports(self, capability: str) -> bool:
         return False
+
+    @abstractmethod
+    def count_tokens(
+        self,
+        *,
+        messages: list[dict],
+        model: str,
+    ) -> Dict[str, int]:
+        ...
+
+
+def approx_token_count_from_messages(messages: list[dict]) -> int:
+    text_chunks: list[str] = []
+    for m in messages:
+        c = m.get("content", "")
+        if isinstance(c, str):
+            text_chunks.append(c)
+        elif isinstance(c, list):
+            for part in c:
+                if isinstance(part, dict):
+                    t = part.get("text") or part.get("content")
+                    if isinstance(t, str):
+                        text_chunks.append(t)
+    text = "\n".join(text_chunks)
+    words = text.split()
+    return math.ceil(len(words) * 1.3)
 
 
 class ProviderRegistry:
