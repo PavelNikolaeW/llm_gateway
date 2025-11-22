@@ -1,20 +1,34 @@
 from uuid import UUID
 
 from pydantic import BaseModel, Field
-from typing import Optional, Literal, Dict, List
-
-Role = Literal["system", "user", "assistant", "tool"]
+from typing import Optional, Dict, List, Any
 
 
 class ChatMessage(BaseModel):
-    role: Role
-    content: str
+    """Универсальная структура сообщения для разных LLM."""
+
+    role: str
+    content: Any = None
+    name: Optional[str] = None
+    tool_call_id: Optional[str] = None
+    tool_calls: Optional[list[dict]] = None
+    extra: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Произвольные поля провайдера (например, function_call, audio и т.д.)",
+    )
 
     def get_message_object(self) -> Dict:
-        return {
-            'role': self.role,
-            'content': self.content
-        }
+        msg: Dict[str, Any] = {"role": self.role}
+        if self.content is not None:
+            msg["content"] = self.content
+        if self.name:
+            msg["name"] = self.name
+        if self.tool_call_id:
+            msg["tool_call_id"] = self.tool_call_id
+        if self.tool_calls:
+            msg["tool_calls"] = self.tool_calls
+        msg.update(self.extra)
+        return msg
 
 
 class ChatOptions(BaseModel):

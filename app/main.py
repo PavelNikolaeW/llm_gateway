@@ -118,10 +118,27 @@ async def chat(
         # Отправляем в ЛЛМ
         res = await prov.chat(messages=messages, model=model)
         # Сохраняем ответ
-        [req.messages.append(ChatMessage(**m['message'])) for m in res['choices']]
+        if isinstance(res, dict) and "choices" in res:
+            for choice in res.get("choices", []):
+                msg_data = choice.get("message", {})
+                req.messages.append(ChatMessage(**msg_data))
+        else:
+            text = res.get("text") if isinstance(res, dict) else str(res)
+            extra = res.get("usage") if isinstance(res, dict) else None
+            req.messages.append(ChatMessage(role="assistant", content=text, extra={"usage": extra} if extra else {}))
+
         session.add_all(
             [
-                Message(id=str(uuid.uuid4()), conversation_id=cid, role=message.role, content=message.content)
+                Message(
+                    id=str(uuid.uuid4()),
+                    conversation_id=cid,
+                    role=message.role,
+                    content=message.content,
+                    name=message.name,
+                    tool_call_id=message.tool_call_id,
+                    tool_calls=message.tool_calls,
+                    meta=message.extra or None,
+                )
                 for message in req.messages
             ]
         )

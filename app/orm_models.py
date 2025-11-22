@@ -1,6 +1,6 @@
-from typing import List, Dict
+from typing import List, Dict, Any
 
-from sqlalchemy import String, DateTime, Text, JSON, ForeignKey, Integer
+from sqlalchemy import String, DateTime, JSON, ForeignKey, Integer, Text
 from sqlalchemy.orm import relationship, Mapped, mapped_column, Session
 from datetime import datetime, timezone
 
@@ -39,8 +39,11 @@ class Message(Base):
     conversation_id: Mapped[str] = mapped_column(
         String, ForeignKey("conversations.id"), index=True
     )
-    role: Mapped[str] = mapped_column(String)  # "user" | "assistant" | "system" | "tool"
-    content: Mapped[str] = mapped_column(Text)
+    role: Mapped[str] = mapped_column(String)
+    content: Mapped[Any | None] = mapped_column(JSON, nullable=True)
+    name: Mapped[str | None] = mapped_column(String, nullable=True)
+    tool_call_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    tool_calls: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     meta: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -50,10 +53,18 @@ class Message(Base):
     conversation: Mapped[Conversation] = relationship(back_populates="messages")
 
     def get_message_object(self) -> Dict:
-        return {
-            'role': self.role,
-            'content': self.content
-        }
+        msg: Dict[str, Any] = {'role': self.role}
+        if self.content is not None:
+            msg['content'] = self.content
+        if self.name:
+            msg['name'] = self.name
+        if self.tool_call_id:
+            msg['tool_call_id'] = self.tool_call_id
+        if self.tool_calls:
+            msg['tool_calls'] = self.tool_calls
+        if self.meta:
+            msg.update(self.meta)
+        return msg
 
 
 class RequestLog(Base):
