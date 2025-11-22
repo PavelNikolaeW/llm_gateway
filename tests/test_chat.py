@@ -1,3 +1,8 @@
+import pathlib
+import sys
+
+sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
+
 import pytest
 from httpx import AsyncClient
 from app.main import app
@@ -10,7 +15,12 @@ async def _auth_headers():
     return {"Authorization": "Bearer test-token"}
 
 
-@pytest.mark.asyncio
+@pytest.fixture
+def anyio_backend():
+    return "asyncio"
+
+
+@pytest.mark.anyio
 async def test_health():
     async with AsyncClient(app=app, base_url="http://test") as ac:
         r = await ac.get("/health")
@@ -18,15 +28,14 @@ async def test_health():
         assert r.json()["status"] == "ok"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_chat_dummy_smoke():
     async with AsyncClient(app=app, base_url="http://test") as ac:
         payload = {
             "messages": [{"role": "user", "content": "Hello"}],
-            "options": {"include_profile": False, "model": "gpt-4o-mini"},
+            "options": {"include_profile": False, "model": "dummy"},
             "stream": False,
         }
-        # Этот тест упадёт на авторизации, пока не настроишь mock/auth.
-        # Оставляю как пример вызова.
         r = await ac.post("/chat", json=payload, headers=await _auth_headers())
-        # assert r.status_code == 200
+        assert r.status_code == 200
+        assert r.json()["message"]["content"].startswith("[dummy] Hello")

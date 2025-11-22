@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from pydantic import BaseModel, Field
-from typing import Optional, Dict, List, Any
+from typing import Optional, Dict, List, Any, Literal
 
 
 class ChatMessage(BaseModel):
@@ -46,7 +46,7 @@ class ChatRequest(BaseModel):
     system_prompt: str | None = None
     options: ChatOptions = Field(default_factory=ChatOptions)
     stream: bool = False
-    user_id: int
+    user_id: int | None = None
 
 
 class ChatChunk(BaseModel):
