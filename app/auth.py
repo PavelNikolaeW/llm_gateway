@@ -27,9 +27,11 @@ async def _load_jwks():
 
 
 def extract_user_id(token: str):
+    if not jwt:
+        return settings.AUTH_DEFAULT_USER_ID
     # вытаскиваем payload без проверки подписи
     claims = jwt.get_unverified_claims(token)
-    return claims.get('user_id', claims.get('uid', claims.get('id')))
+    return claims.get('user_id', claims.get('uid', claims.get('id', settings.AUTH_DEFAULT_USER_ID)))
 
 
 async def _verify_local(token: str) -> Optional[str]:
@@ -51,14 +53,20 @@ async def _verify_local(token: str) -> Optional[str]:
         return None
 
 
-async def verify_bearer_token(authorization: str | None = Header(default=None)) -> bool:
+async def verify_bearer_token(authorization: str | None = Header(default=None)) -> int:
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
     token = authorization.split(" ", 1)[1]
 
+    if settings.AUTH_STUB_ENABLED:
+        return settings.AUTH_STUB_USER_ID
+
     # 1) Trust canonical Django verify endpoint
-    async with httpx.AsyncClient(timeout=5) as client:
-        resp = await client.post(settings.AUTH_VERIFY_URL, json={"token": token})
+    try:
+        async with httpx.AsyncClient(timeout=5) as client:
+            resp = await client.post(settings.AUTH_VERIFY_URL, json={"token": token})
+    except httpx.HTTPError as exc:
+        raise HTTPException(status_code=401, detail=f"Token verification failed: {exc}") from exc
 
     if resp.status_code != 200:
         raise HTTPException(status_code=401, detail="Token verification failed")

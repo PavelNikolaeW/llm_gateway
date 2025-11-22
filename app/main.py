@@ -6,12 +6,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from typing import AsyncIterator
 import json
 
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
-
 from .config import settings
 from .auth import verify_bearer_token
-from .db import get_session, engine, Base
+from .db import Base, engine, fetch_conversation, get_session
 from .orm_models import Message, Conversation
 from .schemas import ChatRequest, ChatResponse, ChatMessage, ChatChunk, CheckTokenResponse
 from .providers.base import registry
@@ -48,8 +45,9 @@ registry.route("*", "openai")  # default fallback
 
 @app.on_event("startup")
 async def on_startup():
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    if engine:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
 
 
 @app.get("/health")
@@ -72,27 +70,16 @@ async def list_messages(
         user_id: int = Depends(verify_bearer_token),
         session: AsyncSession = Depends(get_session),
 ):
-    # Можно добавить проверку, что разговор принадлежит user_id
-    print(type(user_id), cid)
-    query = (
-        select(Conversation)
-        .where(
-            Conversation.id == cid,
-            Conversation.user_id == user_id
-        )
-    )
-    result = await session.scalars(query)
-    conversation = result.all()
-    print(f'{conversation=}')
-    return [
-
-    ]
+    conversation = await fetch_conversation(session, cid, user_id, with_messages=True)
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    return [m.get_message_object() for m in conversation.messages]
 
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat(
         req: ChatRequest,
-        user_id: bool = Depends(verify_bearer_token),
+        user_id: int = Depends(verify_bearer_token),
         session: AsyncSession = Depends(get_session),
 ):
     model = req.options.model or settings.DEFAULT_MODEL
@@ -100,20 +87,10 @@ async def chat(
     async with measure_and_log(session, user_id=user_id, model=model):
         # 1) Подгружаем диалог
         cid = await ensure_conversation(session, req, user_id)
-        query = (
-            select(Conversation)
-            .options(selectinload(Conversation.messages))
-            .where(
-                Conversation.id == cid,
-                Conversation.user_id == user_id
-            )
-        )
-        query = await session.scalars(query)
-        conversation = query.first()
+        conversation = await fetch_conversation(session, cid, user_id, with_messages=True)
         if not conversation:
             raise HTTPException(status_code=404, detail="Conversation not found")
 
-        tools.call(req)
         messages = conversation.get_messages(req.messages)
         # Отправляем в ЛЛМ
         res = await prov.chat(messages=messages, model=model)
