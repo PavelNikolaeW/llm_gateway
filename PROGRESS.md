@@ -1,9 +1,9 @@
 # Epic Progress Tracker
 
 ## Summary
-- **Completed**: 28/47
-- **Tests**: 398 passing
-- **Last Updated**: PACK-028
+- **Completed**: 29/47
+- **Tests**: 408 passing
+- **Last Updated**: PACK-029
 
 ## Completed
 
@@ -37,12 +37,12 @@
 | PACK-026 | Metrics & Monitoring | Prometheus /metrics endpoint, HTTP/LLM/token counters |
 | PACK-027 | Configuration Management | Environment enum, validation, LLM config, rate limits |
 | PACK-028 | Integration Tests - Dialogs | Auth, validation, response format, public endpoints, 18 tests |
+| PACK-029 | Integration Tests - Messages | Auth, validation, request format, 12 tests |
 
 ## Pending
 
 | Pack | Title |
 |------|-------|
-| PACK-029 | Integration Tests - Messages |
 | PACK-030 | Integration Tests - Tokens |
 | PACK-031 | Integration Tests - Admin |
 | PACK-032 | E2E Tests - Chat Flow |
