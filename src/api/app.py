@@ -14,13 +14,15 @@ from typing import Any
 
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 
 from src.api.routes import admin_router, dialogs_router, messages_router, tokens_router
 from src.config.logging import configure_logging, get_logger
 from src.config.settings import settings
 from src.integrations.jwt_validator import JWTValidator, JWTClaims
+from src.shared.metrics import record_http_request, record_error
 from src.shared.exceptions import (
     ApplicationError,
     ForbiddenError,
@@ -98,7 +100,7 @@ def _configure_cors(app: FastAPI) -> None:
 
 def _configure_middleware(app: FastAPI) -> None:
     """Configure custom middleware."""
-    # Add request context middleware (adds request_id, logging)
+    # Add request context middleware (adds request_id, logging, metrics)
     app.add_middleware(RequestContextMiddleware)
 
     # Add JWT auth middleware
@@ -251,6 +253,18 @@ def _register_routes(app: FastAPI) -> None:
         """
         return {"status": "ok"}
 
+    @app.get("/metrics")
+    async def metrics() -> Response:
+        """Prometheus metrics endpoint.
+
+        Returns:
+            Prometheus metrics in text format
+        """
+        return PlainTextResponse(
+            content=generate_latest(),
+            media_type=CONTENT_TYPE_LATEST,
+        )
+
     # Register API routers
     app.include_router(admin_router, prefix="/api/v1")
     app.include_router(dialogs_router, prefix="/api/v1")
@@ -259,12 +273,13 @@ def _register_routes(app: FastAPI) -> None:
 
 
 class RequestContextMiddleware(BaseHTTPMiddleware):
-    """Middleware to add request context (request_id, logging).
+    """Middleware to add request context (request_id, logging, metrics).
 
     Adds:
     - Unique request_id to each request
     - Structured logging with request details
     - Request timing
+    - Prometheus metrics
     """
 
     async def dispatch(
@@ -292,10 +307,19 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
             response = await call_next(request)
 
             # Calculate duration
-            duration_ms = int((time.time() - start_time) * 1000)
+            duration_seconds = time.time() - start_time
+            duration_ms = int(duration_seconds * 1000)
 
             # Add headers
             response.headers["X-Request-ID"] = req_id
+
+            # Record metrics
+            record_http_request(
+                method=request.method,
+                path=request.url.path,
+                status_code=response.status_code,
+                duration=duration_seconds,
+            )
 
             # Log response
             logger.info(
@@ -313,7 +337,17 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
             return response
 
         except Exception as e:
-            duration_ms = int((time.time() - start_time) * 1000)
+            duration_seconds = time.time() - start_time
+            duration_ms = int(duration_seconds * 1000)
+
+            # Record error metrics
+            record_http_request(
+                method=request.method,
+                path=request.url.path,
+                status_code=500,
+                duration=duration_seconds,
+            )
+
             logger.error(
                 f"Request failed: {e}",
                 extra={
@@ -335,15 +369,16 @@ class JWTAuthMiddleware(BaseHTTPMiddleware):
 
     Excludes:
     - /health
+    - /metrics
     - /docs
     - /redoc
     - /openapi.json
     """
 
     # Paths that don't require authentication
-    PUBLIC_PATHS = {"/health", "/docs", "/redoc", "/openapi.json"}
+    PUBLIC_PATHS = {"/health", "/metrics", "/docs", "/redoc", "/openapi.json"}
     # Path prefixes that don't require authentication
-    PUBLIC_PREFIXES = ("/health", "/docs", "/redoc")
+    PUBLIC_PREFIXES = ("/health", "/metrics", "/docs", "/redoc")
 
     def __init__(self, app: FastAPI):
         super().__init__(app)

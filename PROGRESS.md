@@ -1,9 +1,9 @@
 # Epic Progress Tracker
 
 ## Summary
-- **Completed**: 25/47
-- **Tests**: 341 passing
-- **Last Updated**: PACK-025
+- **Completed**: 26/47
+- **Tests**: 360 passing
+- **Last Updated**: PACK-026
 
 ## Completed
 
@@ -34,12 +34,12 @@
 | PACK-023 | Request Validation | Pydantic validators, max content length |
 | PACK-024 | Error Handling | Structured {code, message, details, request_id} format, stack trace hiding |
 | PACK-025 | Structured Logging | JSON/console formatters, request correlation, log levels |
+| PACK-026 | Metrics & Monitoring | Prometheus /metrics endpoint, HTTP/LLM/token counters |
 
 ## Pending
 
 | Pack | Title |
 |------|-------|
-| PACK-026 | Metrics & Monitoring |
 | PACK-027 | Configuration Management |
 | PACK-028 | Integration Tests - Dialogs |
 | PACK-029 | Integration Tests - Messages |
