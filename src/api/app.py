@@ -18,6 +18,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 
+from src.api.routes import dialogs_router
 from src.config.settings import settings
 from src.integrations.jwt_validator import JWTValidator, JWTClaims
 from src.shared.exceptions import (
@@ -188,6 +189,9 @@ def _register_routes(app: FastAPI) -> None:
             Health status
         """
         return {"status": "ok"}
+
+    # Register API routers
+    app.include_router(dialogs_router, prefix="/api/v1")
 
 
 class RequestContextMiddleware(BaseHTTPMiddleware):
