@@ -38,6 +38,9 @@ class Settings(BaseSettings):
     debug: bool = False
     log_level: str = "INFO"
 
+    # Validation limits
+    max_content_length: int = 100000  # Max message content length in characters
+
     @property
     def database_url(self) -> str:
         """Build PostgreSQL connection URL."""

@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class DialogCreate(BaseModel):
@@ -167,6 +167,18 @@ class MessageCreate(BaseModel):
     """Schema for creating a message."""
 
     content: str = Field(..., min_length=1, description="Message content")
+
+    @field_validator("content")
+    @classmethod
+    def validate_content_length(cls, v: str) -> str:
+        """Validate content doesn't exceed max length from settings."""
+        from src.config.settings import settings
+
+        if len(v) > settings.max_content_length:
+            raise ValueError(
+                f"Content exceeds maximum length of {settings.max_content_length} characters"
+            )
+        return v
 
 
 class MessageResponse(BaseModel):
