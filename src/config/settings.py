@@ -19,6 +19,11 @@ class Settings(BaseSettings):
     django_secret_key: str
     jwt_token: str | None = None
 
+    # JWT Validation
+    jwt_secret: str | None = None  # For HS256 - shared secret
+    jwt_jwks_url: str | None = None  # For RS256 - JWKS endpoint
+    jwt_algorithm: str = "HS256"  # Default algorithm (HS256 or RS256)
+
     # CORS
     cors_origins: str = "http://localhost:8080"
 
