@@ -1,4 +1,6 @@
 """Simple integration test demonstrating data access layer functionality."""
+import uuid
+
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -21,6 +23,10 @@ async def test_data_access_layer_integration(session: AsyncSession):
     - Parameterized queries (SQL injection protection)
     - Transaction support
     """
+    # Use unique IDs to avoid conflicts between test runs
+    test_user_id = 999000 + abs(hash(str(uuid.uuid4()))) % 1000
+    test_model_name = f"test-gpt-4-{uuid.uuid4().hex[:8]}"
+
     # Initialize repositories
     dialog_repo = DialogRepository()
     message_repo = MessageRepository()
@@ -31,23 +37,23 @@ async def test_data_access_layer_integration(session: AsyncSession):
     # 1. Create model
     model = await model_repo.create(
         session,
-        name="test-gpt-4",
+        name=test_model_name,
         provider="openai",
         cost_per_1k_prompt_tokens=0.03,
         cost_per_1k_completion_tokens=0.06,
         context_window=8192,
         enabled=True,
     )
-    assert model.name == "test-gpt-4"
+    assert model.name == test_model_name
 
     # 2. Create dialog
     dialog = await dialog_repo.create(
         session,
-        user_id=999,
+        user_id=test_user_id,
         title="Test Dialog",
-        model_name="test-gpt-4",
+        model_name=test_model_name,
     )
-    assert dialog.user_id == 999
+    assert dialog.user_id == test_user_id
 
     # 3. Create messages
     user_msg = await message_repo.create_user_message(session, dialog.id, "Hello!")
@@ -59,16 +65,16 @@ async def test_data_access_layer_integration(session: AsyncSession):
     assert assistant_msg.role == "assistant"
 
     # 4. Token balance operations
-    balance = await balance_repo.get_or_create(session, user_id=999, initial_balance=1000)
+    balance = await balance_repo.get_or_create(session, user_id=test_user_id, initial_balance=1000)
     assert balance.balance == 1000
 
     # Deduct tokens
-    balance = await balance_repo.deduct_tokens(session, user_id=999, amount=100)
+    balance = await balance_repo.deduct_tokens(session, user_id=test_user_id, amount=100)
     assert balance.balance == 900
 
     # 5. Transaction log
     tx = await transaction_repo.create_llm_usage_transaction(
-        session, user_id=999, amount=100, dialog_id=dialog.id, message_id=assistant_msg.id
+        session, user_id=test_user_id, amount=100, dialog_id=dialog.id, message_id=assistant_msg.id
     )
     assert tx.amount == -100  # Negative for deduction
     assert tx.reason == "llm_usage"

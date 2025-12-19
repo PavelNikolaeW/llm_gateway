@@ -1,4 +1,6 @@
 """Integration tests for Redis cache layer."""
+import uuid
+
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -17,6 +19,10 @@ async def test_cache_integration(session: AsyncSession):
     - TTL configuration
     - Graceful degradation if Redis unavailable
     """
+    # Use unique IDs to avoid conflicts between test runs
+    test_user_id = 888000 + abs(hash(str(uuid.uuid4()))) % 1000
+    test_model_name = f"test-claude-{uuid.uuid4().hex[:8]}"
+
     # Check if Redis is available
     redis = await get_redis()
     redis_available = redis is not None
@@ -29,30 +35,30 @@ async def test_cache_integration(session: AsyncSession):
 
     # Test 1: Token balance caching
     # Create balance in DB
-    balance1 = await balance_repo.get_or_create(session, user_id=888, initial_balance=5000)
+    balance1 = await balance_repo.get_or_create(session, user_id=test_user_id, initial_balance=5000)
     await session.commit()
     assert balance1.balance == 5000
     print("✓ Created token balance in database")
 
     if redis_available:
         # First access should cache the balance
-        balance2 = await balance_repo.get_by_user(session, user_id=888)
+        balance2 = await balance_repo.get_by_user(session, user_id=test_user_id)
         assert balance2.balance == 5000
         print("✓ Balance cached (first access)")
 
         # Second access should hit cache
-        balance3 = await balance_repo.get_by_user(session, user_id=888)
+        balance3 = await balance_repo.get_by_user(session, user_id=test_user_id)
         assert balance3.balance == 5000
         print("✓ Balance retrieved from cache (second access)")
 
         # Update balance - should invalidate cache
-        balance4 = await balance_repo.deduct_tokens(session, user_id=888, amount=1000)
+        balance4 = await balance_repo.deduct_tokens(session, user_id=test_user_id, amount=1000)
         assert balance4.balance == 4000
         await session.commit()
         print("✓ Balance updated and cache invalidated")
 
         # Next access should fetch from DB and re-cache
-        balance5 = await balance_repo.get_by_user(session, user_id=888)
+        balance5 = await balance_repo.get_by_user(session, user_id=test_user_id)
         assert balance5.balance == 4000
         print("✓ Updated balance re-cached")
     else:
@@ -61,7 +67,7 @@ async def test_cache_integration(session: AsyncSession):
     # Test 2: Model metadata caching
     model1 = await model_repo.create(
         session,
-        name="test-claude",
+        name=test_model_name,
         provider="anthropic",
         cost_per_1k_prompt_tokens=0.015,
         cost_per_1k_completion_tokens=0.075,
@@ -73,13 +79,13 @@ async def test_cache_integration(session: AsyncSession):
 
     if redis_available:
         # First access should cache the model
-        model2 = await model_repo.get_by_name(session, "test-claude")
+        model2 = await model_repo.get_by_name(session, test_model_name)
         assert model2 is not None
         assert model2.provider == "anthropic"
         print("✓ Model cached (first access)")
 
         # Second access should hit cache
-        model3 = await model_repo.get_by_name(session, "test-claude")
+        model3 = await model_repo.get_by_name(session, test_model_name)
         assert model3 is not None
         assert model3.provider == "anthropic"
         print("✓ Model retrieved from cache (second access)")
