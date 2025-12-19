@@ -39,3 +39,61 @@ class DialogList(BaseModel):
     page: int
     page_size: int
     has_next: bool
+
+
+# Token Schemas
+
+
+class TokenBalanceResponse(BaseModel):
+    """Schema for token balance response."""
+
+    user_id: int
+    balance: int
+    limit: int | None = None
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class TokenDeductRequest(BaseModel):
+    """Schema for token deduction request."""
+
+    amount: int = Field(..., gt=0, description="Amount of tokens to deduct")
+    dialog_id: UUID
+    message_id: UUID
+
+
+class TokenTopUpRequest(BaseModel):
+    """Schema for admin token top-up/deduct request."""
+
+    amount: int = Field(..., description="Amount to add (positive) or remove (negative)")
+
+
+class TokenTransactionResponse(BaseModel):
+    """Schema for token transaction response."""
+
+    id: int
+    user_id: int
+    amount: int
+    reason: str
+    dialog_id: UUID | None = None
+    message_id: UUID | None = None
+    admin_user_id: int | None = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class TokenEvent(BaseModel):
+    """Schema for token events emitted by the service."""
+
+    event_type: str  # 'tokens_deducted', 'balance_exhausted'
+    user_id: int
+    amount: int | None = None
+    new_balance: int
+    reason: str | None = None
+    dialog_id: UUID | None = None
+    message_id: UUID | None = None
+    timestamp: datetime
