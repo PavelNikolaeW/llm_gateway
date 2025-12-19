@@ -43,3 +43,17 @@ class InsufficientTokensError(ApplicationError):
 
     def __init__(self, message: str):
         super().__init__(message, status_code=402)
+
+
+class LLMTimeoutError(ApplicationError):
+    """LLM request timed out (504 Gateway Timeout)."""
+
+    def __init__(self, message: str = "LLM request timed out"):
+        super().__init__(message, status_code=504)
+
+
+class LLMError(ApplicationError):
+    """LLM error (500 Internal Server Error)."""
+
+    def __init__(self, message: str = "LLM error"):
+        super().__init__(message, status_code=500)

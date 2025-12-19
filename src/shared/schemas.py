@@ -150,3 +150,65 @@ class AgentTypeInfo(BaseModel):
     name: str
     description: str
     config: AgentConfig
+
+
+# Message Schemas
+
+
+class MessageCreate(BaseModel):
+    """Schema for creating a message."""
+
+    content: str = Field(..., min_length=1, description="Message content")
+
+
+class MessageResponse(BaseModel):
+    """Schema for message response."""
+
+    id: UUID
+    dialog_id: UUID
+    role: str  # 'user' or 'assistant'
+    content: str
+    prompt_tokens: int | None = None
+    completion_tokens: int | None = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class StreamChunk(BaseModel):
+    """Schema for streaming response chunk."""
+
+    content: str
+    done: bool = False
+    message_id: UUID | None = None
+    prompt_tokens: int | None = None
+    completion_tokens: int | None = None
+
+
+# Message Events
+
+
+class MessageSentEvent(BaseModel):
+    """Event emitted when a user message is sent."""
+
+    event_type: str = "message_sent"
+    dialog_id: UUID
+    user_id: int
+    message_id: UUID
+    content_length: int
+    timestamp: datetime
+
+
+class LLMResponseEvent(BaseModel):
+    """Event emitted when LLM response is received."""
+
+    event_type: str = "llm_response_received"
+    dialog_id: UUID
+    user_id: int
+    message_id: UUID
+    model: str
+    prompt_tokens: int
+    completion_tokens: int
+    latency_ms: int
+    timestamp: datetime
