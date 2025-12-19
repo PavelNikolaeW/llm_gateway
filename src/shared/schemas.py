@@ -56,6 +56,14 @@ class TokenBalanceResponse(BaseModel):
         from_attributes = True
 
 
+class TokenStatsResponse(BaseModel):
+    """Schema for token stats response (GET /users/me/tokens)."""
+
+    balance: int
+    total_used: int
+    limit: int | None = None
+
+
 class TokenDeductRequest(BaseModel):
     """Schema for token deduction request."""
 

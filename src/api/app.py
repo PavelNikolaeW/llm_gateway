@@ -18,7 +18,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 
-from src.api.routes import dialogs_router, messages_router
+from src.api.routes import dialogs_router, messages_router, tokens_router
 from src.config.settings import settings
 from src.integrations.jwt_validator import JWTValidator, JWTClaims
 from src.shared.exceptions import (
@@ -193,6 +193,7 @@ def _register_routes(app: FastAPI) -> None:
     # Register API routers
     app.include_router(dialogs_router, prefix="/api/v1")
     app.include_router(messages_router, prefix="/api/v1")
+    app.include_router(tokens_router, prefix="/api/v1")
 
 
 class RequestContextMiddleware(BaseHTTPMiddleware):

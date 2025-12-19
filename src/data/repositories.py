@@ -2,7 +2,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.data.cache import cache_service
@@ -223,6 +223,23 @@ class TokenTransactionRepository(BaseRepository[TokenTransaction]):
             .limit(limit)
         )
         return list(result.scalars().all())
+
+    async def get_total_used(self, session: AsyncSession, user_id: int) -> int:
+        """Get total tokens used by a user (sum of all negative transactions).
+
+        Args:
+            session: Database session
+            user_id: User to get total usage for
+
+        Returns:
+            Total tokens used (as positive number)
+        """
+        result = await session.execute(
+            select(func.coalesce(func.sum(-TokenTransaction.amount), 0))
+            .where(TokenTransaction.user_id == user_id)
+            .where(TokenTransaction.amount < 0)
+        )
+        return int(result.scalar() or 0)
 
 
 class ModelRepository(BaseRepository[Model]):

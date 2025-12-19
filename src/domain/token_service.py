@@ -11,6 +11,7 @@ from src.shared.exceptions import ForbiddenError, InsufficientTokensError
 from src.shared.schemas import (
     TokenBalanceResponse,
     TokenEvent,
+    TokenStatsResponse,
     TokenTransactionResponse,
 )
 
@@ -101,6 +102,27 @@ class TokenService:
         """
         balance = await self.balance_repo.get_or_create(session, user_id)
         return TokenBalanceResponse.model_validate(balance)
+
+    async def get_token_stats(
+        self, session: AsyncSession, user_id: int
+    ) -> TokenStatsResponse:
+        """Get token stats for user including total usage.
+
+        Args:
+            session: Database session
+            user_id: User to get stats for
+
+        Returns:
+            Token stats with balance, total_used, and limit
+        """
+        balance = await self.balance_repo.get_or_create(session, user_id)
+        total_used = await self.transaction_repo.get_total_used(session, user_id)
+
+        return TokenStatsResponse(
+            balance=balance.balance,
+            total_used=total_used,
+            limit=balance.limit,
+        )
 
     async def deduct_tokens(
         self,
