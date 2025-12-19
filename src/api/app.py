@@ -7,7 +7,6 @@ Configures the FastAPI application with:
 - Structured logging
 - Health check endpoint
 """
-import logging
 import time
 import uuid
 from contextvars import ContextVar
@@ -19,6 +18,7 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 
 from src.api.routes import admin_router, dialogs_router, messages_router, tokens_router
+from src.config.logging import configure_logging, get_logger
 from src.config.settings import settings
 from src.integrations.jwt_validator import JWTValidator, JWTClaims
 from src.shared.exceptions import (
@@ -32,7 +32,7 @@ from src.shared.exceptions import (
     ValidationError,
 )
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 # Context variables for request context
 request_id_ctx: ContextVar[str] = ContextVar("request_id", default="")
@@ -46,6 +46,13 @@ def create_app() -> FastAPI:
     Returns:
         Configured FastAPI application
     """
+    # Configure logging first
+    configure_logging(
+        level=settings.log_level,
+        json_format=not settings.debug,  # JSON in prod, console in dev
+        use_colors=True,
+    )
+
     app = FastAPI(
         title="LLM Gateway API",
         description="API gateway for LLM providers with token management",
@@ -64,6 +71,8 @@ def create_app() -> FastAPI:
 
     # Register routes
     _register_routes(app)
+
+    logger.info("Application started", extra={"debug_mode": settings.debug})
 
     return app
 

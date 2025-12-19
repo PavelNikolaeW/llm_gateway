@@ -1,9 +1,9 @@
 # Epic Progress Tracker
 
 ## Summary
-- **Completed**: 24/47
-- **Tests**: 328 passing
-- **Last Updated**: PACK-024
+- **Completed**: 25/47
+- **Tests**: 341 passing
+- **Last Updated**: PACK-025
 
 ## Completed
 
@@ -33,12 +33,12 @@
 | PACK-022 | Auth Middleware | *Skipped - done in PACK-014* |
 | PACK-023 | Request Validation | Pydantic validators, max content length |
 | PACK-024 | Error Handling | Structured {code, message, details, request_id} format, stack trace hiding |
+| PACK-025 | Structured Logging | JSON/console formatters, request correlation, log levels |
 
 ## Pending
 
 | Pack | Title |
 |------|-------|
-| PACK-025 | Structured Logging |
 | PACK-026 | Metrics & Monitoring |
 | PACK-027 | Configuration Management |
 | PACK-028 | Integration Tests - Dialogs |

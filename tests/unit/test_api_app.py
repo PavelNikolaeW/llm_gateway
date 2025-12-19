@@ -363,6 +363,7 @@ class TestExceptionHandlers:
         with patch("src.api.app.settings") as mock_settings:
             mock_settings.debug = False
             mock_settings.cors_origins = "*"
+            mock_settings.log_level = "INFO"
 
             test_app = create_app()
 
@@ -383,6 +384,7 @@ class TestExceptionHandlers:
         with patch("src.api.app.settings") as mock_settings:
             mock_settings.debug = True
             mock_settings.cors_origins = "*"
+            mock_settings.log_level = "DEBUG"
 
             test_app = create_app()
 
