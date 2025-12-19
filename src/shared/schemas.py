@@ -97,3 +97,31 @@ class TokenEvent(BaseModel):
     dialog_id: UUID | None = None
     message_id: UUID | None = None
     timestamp: datetime
+
+
+# Model Schemas
+
+
+class ModelMetadata(BaseModel):
+    """Schema for model metadata response."""
+
+    name: str
+    provider: str
+    cost_per_1k_prompt_tokens: float
+    cost_per_1k_completion_tokens: float
+    context_window: int
+    enabled: bool
+
+    class Config:
+        from_attributes = True
+
+
+class CostEstimate(BaseModel):
+    """Schema for cost estimation response."""
+
+    model_name: str
+    prompt_tokens: int
+    completion_tokens: int
+    prompt_cost: float
+    completion_cost: float
+    total_cost: float
