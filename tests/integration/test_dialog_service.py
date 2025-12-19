@@ -174,18 +174,23 @@ async def test_list_dialogs_empty(session: AsyncSession, dialog_service: DialogS
 @pytest.mark.asyncio
 async def test_list_dialogs_pagination(session: AsyncSession, dialog_service: DialogService):
     """Test pagination works correctly."""
+    import uuid
+
+    # Use unique user_id to avoid conflicts with previous test runs
+    user_id = 110000 + abs(hash(str(uuid.uuid4()))) % 10000
+
     # Create 25 dialogs
     for i in range(25):
         data = DialogCreate(title=f"Page Test {i}")
-        await dialog_service.create_dialog(session, user_id=110, data=data)
+        await dialog_service.create_dialog(session, user_id=user_id, data=data)
 
     # Page 1
-    page1 = await dialog_service.list_dialogs(session, user_id=110, page=1, page_size=20)
+    page1 = await dialog_service.list_dialogs(session, user_id=user_id, page=1, page_size=20)
     assert len(page1.items) == 20
     assert page1.has_next is True
 
     # Page 2
-    page2 = await dialog_service.list_dialogs(session, user_id=110, page=2, page_size=20)
+    page2 = await dialog_service.list_dialogs(session, user_id=user_id, page=2, page_size=20)
     assert len(page2.items) == 5
     assert page2.has_next is False
 
