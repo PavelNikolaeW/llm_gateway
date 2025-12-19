@@ -1,4 +1,5 @@
-"""Data access layer - database, models, and repositories."""
+"""Data access layer - database, models, repositories, and cache."""
+from src.data.cache import CacheService, cache_service, close_redis, get_redis
 from src.data.database import (
     close_engine,
     get_engine,
@@ -22,6 +23,11 @@ __all__ = [
     "get_session_maker",
     "get_transaction_session",
     "close_engine",
+    # Cache
+    "get_redis",
+    "close_redis",
+    "CacheService",
+    "cache_service",
     # Models
     "Base",
     "Dialog",

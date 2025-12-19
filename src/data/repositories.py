@@ -5,6 +5,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.data.cache import cache_service
 from src.data.models import Dialog, Message, Model, TokenBalance, TokenTransaction
 from src.data.repository import BaseRepository
 
@@ -91,8 +92,38 @@ class TokenBalanceRepository(BaseRepository[TokenBalance]):
         super().__init__(TokenBalance)
 
     async def get_by_user(self, session: AsyncSession, user_id: int) -> TokenBalance | None:
-        """Get token balance for a user."""
-        return await session.get(TokenBalance, user_id)
+        """Get token balance for a user.
+
+        Uses cache with 5 min TTL, falls back to database on miss.
+        """
+        # Try cache first
+        cached = await cache_service.get_balance(user_id)
+        if cached:
+            # Reconstruct TokenBalance from cached data
+            balance = TokenBalance(
+                user_id=cached["user_id"],
+                balance=cached["balance"],
+                limit=cached.get("limit"),
+                updated_at=datetime.fromisoformat(cached["updated_at"]),
+            )
+            return balance
+
+        # Cache miss - fetch from database
+        balance = await session.get(TokenBalance, user_id)
+
+        # Cache the result for next time
+        if balance:
+            await cache_service.set_balance(
+                user_id,
+                {
+                    "user_id": balance.user_id,
+                    "balance": balance.balance,
+                    "limit": balance.limit,
+                    "updated_at": balance.updated_at.isoformat(),
+                },
+            )
+
+        return balance
 
     async def get_or_create(
         self, session: AsyncSession, user_id: int, initial_balance: int = 0
@@ -109,6 +140,7 @@ class TokenBalanceRepository(BaseRepository[TokenBalance]):
         """Deduct tokens from user balance (atomic operation).
 
         Raises ValueError if insufficient balance.
+        Invalidates cache after update.
         """
         balance = await self.get_or_create(session, user_id)
         if balance.balance < amount:
@@ -119,15 +151,26 @@ class TokenBalanceRepository(BaseRepository[TokenBalance]):
         balance.updated_at = datetime.utcnow()
         await session.flush()
         await session.refresh(balance)
+
+        # Invalidate cache after balance update
+        await cache_service.invalidate_balance(user_id)
+
         return balance
 
     async def add_tokens(self, session: AsyncSession, user_id: int, amount: int) -> TokenBalance:
-        """Add tokens to user balance (top-up)."""
+        """Add tokens to user balance (top-up).
+
+        Invalidates cache after update.
+        """
         balance = await self.get_or_create(session, user_id)
         balance.balance += amount
         balance.updated_at = datetime.utcnow()
         await session.flush()
         await session.refresh(balance)
+
+        # Invalidate cache after balance update
+        await cache_service.invalidate_balance(user_id)
+
         return balance
 
 
@@ -189,8 +232,46 @@ class ModelRepository(BaseRepository[Model]):
         super().__init__(Model)
 
     async def get_by_name(self, session: AsyncSession, name: str) -> Model | None:
-        """Get model by name."""
-        return await session.get(Model, name)
+        """Get model by name.
+
+        Uses cache with 1 hour TTL, falls back to database on miss.
+        """
+        # Try cache first
+        cached = await cache_service.get_model(name)
+        if cached:
+            # Reconstruct Model from cached data
+            model = Model(
+                name=cached["name"],
+                provider=cached["provider"],
+                cost_per_1k_prompt_tokens=cached["cost_per_1k_prompt_tokens"],
+                cost_per_1k_completion_tokens=cached["cost_per_1k_completion_tokens"],
+                context_window=cached["context_window"],
+                enabled=cached["enabled"],
+                created_at=datetime.fromisoformat(cached["created_at"]),
+                updated_at=datetime.fromisoformat(cached["updated_at"]),
+            )
+            return model
+
+        # Cache miss - fetch from database
+        model = await session.get(Model, name)
+
+        # Cache the result for next time
+        if model:
+            await cache_service.set_model(
+                name,
+                {
+                    "name": model.name,
+                    "provider": model.provider,
+                    "cost_per_1k_prompt_tokens": float(model.cost_per_1k_prompt_tokens),
+                    "cost_per_1k_completion_tokens": float(model.cost_per_1k_completion_tokens),
+                    "context_window": model.context_window,
+                    "enabled": model.enabled,
+                    "created_at": model.created_at.isoformat(),
+                    "updated_at": model.updated_at.isoformat(),
+                },
+            )
+
+        return model
 
     async def get_enabled_models(self, session: AsyncSession) -> list[Model]:
         """Get all enabled models."""
