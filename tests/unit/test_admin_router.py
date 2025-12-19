@@ -16,6 +16,8 @@ from src.api.dependencies import (
 )
 from src.shared.exceptions import ForbiddenError, NotFoundError
 from src.shared.schemas import (
+    GlobalStatsResponse,
+    ModelUsageStats,
     TokenBalanceResponse,
     TokenTransactionResponse,
     UserDetailsResponse,
@@ -71,6 +73,20 @@ def mock_transaction_response():
         message_id=None,
         admin_user_id=123,
         created_at=datetime.now(timezone.utc),
+    )
+
+
+@pytest.fixture
+def mock_global_stats():
+    """Create mock global stats response."""
+    return GlobalStatsResponse(
+        total_tokens=50000,
+        active_users=10,
+        top_models=[
+            ModelUsageStats(model="gpt-4", usage=1000),
+            ModelUsageStats(model="gpt-3.5-turbo", usage=500),
+        ],
+        avg_latency_ms=0.0,
     )
 
 
@@ -409,6 +425,64 @@ class TestGetTokenHistory:
         response = client_non_admin.get("/api/v1/admin/users/456/tokens/history")
 
         assert response.status_code == 403
+
+
+class TestGetGlobalStats:
+    """Tests for GET /admin/stats endpoint."""
+
+    def test_get_stats_success(self, client, mock_service, mock_global_stats):
+        """Test successful global stats retrieval."""
+        mock_service.get_global_stats = AsyncMock(return_value=mock_global_stats)
+
+        response = client.get(
+            "/api/v1/admin/stats?start_date=2024-01-01&end_date=2024-01-31"
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total_tokens"] == 50000
+        assert data["active_users"] == 10
+        assert len(data["top_models"]) == 2
+        assert data["top_models"][0]["model"] == "gpt-4"
+
+    def test_get_stats_empty(self, client, mock_service):
+        """Test stats with no data."""
+        mock_service.get_global_stats = AsyncMock(
+            return_value=GlobalStatsResponse(
+                total_tokens=0,
+                active_users=0,
+                top_models=[],
+                avg_latency_ms=0.0,
+            )
+        )
+
+        response = client.get(
+            "/api/v1/admin/stats?start_date=2024-01-01&end_date=2024-01-31"
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total_tokens"] == 0
+        assert data["active_users"] == 0
+        assert data["top_models"] == []
+
+    def test_get_stats_forbidden_non_admin(self, client_non_admin, mock_service):
+        """Test stats returns 403 for non-admin."""
+        mock_service.get_global_stats = AsyncMock(
+            side_effect=ForbiddenError("Admin access required")
+        )
+
+        response = client_non_admin.get(
+            "/api/v1/admin/stats?start_date=2024-01-01&end_date=2024-01-31"
+        )
+
+        assert response.status_code == 403
+
+    def test_get_stats_missing_dates_returns_422(self, client, mock_service):
+        """Test missing date parameters returns 422."""
+        response = client.get("/api/v1/admin/stats")
+
+        assert response.status_code == 422  # Validation error
 
 
 class TestAdminRouterWithAuth:

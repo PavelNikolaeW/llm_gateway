@@ -267,3 +267,19 @@ class AdminActionEvent(BaseModel):
     action: str
     details: dict[str, Any]
     timestamp: datetime
+
+
+class ModelUsageStats(BaseModel):
+    """Schema for model usage in stats response."""
+
+    model: str
+    usage: int
+
+
+class GlobalStatsResponse(BaseModel):
+    """Schema for global usage statistics (GET /admin/stats)."""
+
+    total_tokens: int
+    active_users: int
+    top_models: list[ModelUsageStats]
+    avg_latency_ms: float

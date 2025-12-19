@@ -43,6 +43,28 @@ class DialogRepository(BaseRepository[Dialog]):
         )
         return result.scalar()
 
+    async def get_top_models_in_range(
+        self,
+        session: AsyncSession,
+        start_date: datetime,
+        end_date: datetime,
+        limit: int = 5,
+    ) -> list[tuple[str, int]]:
+        """Get top models by usage (message count) in date range.
+
+        Returns list of (model_name, usage_count) tuples.
+        """
+        result = await session.execute(
+            select(Dialog.model_name, func.count(Message.id).label("usage"))
+            .join(Message, Dialog.id == Message.dialog_id)
+            .where(Message.created_at >= start_date)
+            .where(Message.created_at < end_date)
+            .group_by(Dialog.model_name)
+            .order_by(func.count(Message.id).desc())
+            .limit(limit)
+        )
+        return [(row[0], row[1]) for row in result.all()]
+
     async def get_by_id_and_user(
         self, session: AsyncSession, dialog_id: UUID, user_id: int
     ) -> Dialog | None:
@@ -97,6 +119,36 @@ class MessageRepository(BaseRepository[Message]):
             prompt_tokens=prompt_tokens,
             completion_tokens=completion_tokens,
         )
+
+    async def get_total_tokens_in_range(
+        self, session: AsyncSession, start_date: datetime, end_date: datetime
+    ) -> int:
+        """Get total tokens used in a date range.
+
+        Sums prompt_tokens + completion_tokens for all messages.
+        """
+        result = await session.execute(
+            select(
+                func.coalesce(func.sum(Message.prompt_tokens), 0)
+                + func.coalesce(func.sum(Message.completion_tokens), 0)
+            )
+            .where(Message.created_at >= start_date)
+            .where(Message.created_at < end_date)
+        )
+        return int(result.scalar() or 0)
+
+    async def get_active_users_in_range(
+        self, session: AsyncSession, start_date: datetime, end_date: datetime
+    ) -> int:
+        """Get count of unique users who sent messages in date range."""
+        result = await session.execute(
+            select(func.count(func.distinct(Dialog.user_id)))
+            .select_from(Message)
+            .join(Dialog, Message.dialog_id == Dialog.id)
+            .where(Message.created_at >= start_date)
+            .where(Message.created_at < end_date)
+        )
+        return int(result.scalar() or 0)
 
 
 class TokenBalanceRepository(BaseRepository[TokenBalance]):

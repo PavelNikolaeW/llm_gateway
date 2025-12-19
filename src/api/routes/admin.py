@@ -1,6 +1,7 @@
 """Admin API routes for user and token management.
 
 Endpoints:
+- GET /admin/stats - Get global usage statistics
 - GET /admin/users - List all users with stats
 - GET /admin/users/{user_id} - Get user details
 - PATCH /admin/users/{user_id}/limits - Set token limit
@@ -8,8 +9,9 @@ Endpoints:
 - GET /admin/users/{user_id}/tokens/history - Get transaction history
 """
 import logging
+from datetime import date, datetime, timezone
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 
 from src.api.dependencies import (
     AdminServiceDep,
@@ -18,6 +20,7 @@ from src.api.dependencies import (
     IsAdmin,
 )
 from src.shared.schemas import (
+    GlobalStatsResponse,
     SetLimitRequest,
     TokenBalanceResponse,
     TokenTransactionResponse,
@@ -29,6 +32,50 @@ from src.shared.schemas import (
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+
+
+@router.get(
+    "/stats",
+    response_model=GlobalStatsResponse,
+    summary="Get global usage statistics",
+    description="Get aggregated usage stats for a date range. Admin only.",
+    responses={
+        403: {"description": "Access denied - admin required"},
+    },
+)
+async def get_global_stats(
+    session: DbSession,
+    is_admin: IsAdmin,
+    service: AdminServiceDep,
+    start_date: date = Query(..., description="Start date (YYYY-MM-DD)"),
+    end_date: date = Query(..., description="End date (YYYY-MM-DD)"),
+) -> GlobalStatsResponse:
+    """Get global usage statistics.
+
+    Args:
+        session: Database session
+        is_admin: Whether caller is admin
+        service: Admin service dependency
+        start_date: Start of date range (inclusive)
+        end_date: End of date range (exclusive)
+
+    Returns:
+        Global stats with total tokens, active users, top models, avg latency
+
+    Raises:
+        ForbiddenError: If caller is not admin (403)
+    """
+    # Convert date to datetime at start of day
+    start_dt = datetime.combine(start_date, datetime.min.time(), tzinfo=timezone.utc)
+    # End date is exclusive, so we include the whole day
+    end_dt = datetime.combine(end_date, datetime.min.time(), tzinfo=timezone.utc)
+
+    return await service.get_global_stats(
+        session=session,
+        is_admin=is_admin,
+        start_date=start_dt,
+        end_date=end_dt,
+    )
 
 
 @router.get(

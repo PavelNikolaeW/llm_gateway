@@ -7,12 +7,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.data.repositories import (
     DialogRepository,
+    MessageRepository,
     TokenBalanceRepository,
     TokenTransactionRepository,
 )
 from src.shared.exceptions import ForbiddenError, NotFoundError
 from src.shared.schemas import (
     AdminActionEvent,
+    GlobalStatsResponse,
+    ModelUsageStats,
     TokenBalanceResponse,
     TokenTransactionResponse,
     UserDetailsResponse,
@@ -41,6 +44,7 @@ class AdminService:
         self.balance_repo = TokenBalanceRepository()
         self.transaction_repo = TokenTransactionRepository()
         self.dialog_repo = DialogRepository()
+        self.message_repo = MessageRepository()
         self._event_handlers: list[EventHandler] = []
 
     def register_event_handler(self, handler: EventHandler) -> None:
@@ -291,3 +295,62 @@ class AdminService:
 
         transactions = await self.transaction_repo.get_by_user(session, user_id, skip, limit)
         return [TokenTransactionResponse.model_validate(t) for t in transactions]
+
+    async def get_global_stats(
+        self,
+        session: AsyncSession,
+        is_admin: bool,
+        start_date: datetime,
+        end_date: datetime,
+    ) -> GlobalStatsResponse:
+        """Get global usage statistics for a date range.
+
+        Args:
+            session: Database session
+            is_admin: Whether caller is admin
+            start_date: Start of date range (inclusive)
+            end_date: End of date range (exclusive)
+
+        Returns:
+            Global stats with total tokens, active users, top models, avg latency
+
+        Raises:
+            ForbiddenError: If caller is not admin
+        """
+        if not is_admin:
+            raise ForbiddenError("Admin access required")
+
+        # Get total tokens used
+        total_tokens = await self.message_repo.get_total_tokens_in_range(
+            session, start_date, end_date
+        )
+
+        # Get active users count
+        active_users = await self.message_repo.get_active_users_in_range(
+            session, start_date, end_date
+        )
+
+        # Get top models
+        top_models_data = await self.dialog_repo.get_top_models_in_range(
+            session, start_date, end_date, limit=5
+        )
+        top_models = [
+            ModelUsageStats(model=model, usage=usage)
+            for model, usage in top_models_data
+        ]
+
+        # Average latency - not currently tracked in database
+        # Could be added by storing latency in messages table
+        avg_latency_ms = 0.0
+
+        logger.info(
+            f"Global stats for {start_date} to {end_date}: "
+            f"tokens={total_tokens}, users={active_users}, models={len(top_models)}"
+        )
+
+        return GlobalStatsResponse(
+            total_tokens=total_tokens,
+            active_users=active_users,
+            top_models=top_models,
+            avg_latency_ms=avg_latency_ms,
+        )
