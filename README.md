@@ -80,15 +80,23 @@ alembic downgrade -1
 
 ### Testing
 
-Run all tests:
+Run all tests (from project root):
 ```bash
-pytest
+pytest tests/
+```
+
+Run individual test files (recommended for async tests):
+```bash
+pytest tests/integration/test_cache.py -v
+pytest tests/integration/test_data_access.py -v
 ```
 
 Run with coverage:
 ```bash
-pytest --cov=src --cov-report=html
+pytest tests/ --cov=src --cov-report=html
 ```
+
+**Note:** Due to pytest-asyncio limitations, running all tests together may cause event loop conflicts. Running tests individually is recommended.
 
 ### Code Quality
 
