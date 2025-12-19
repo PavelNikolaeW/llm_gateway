@@ -2,21 +2,37 @@
 from collections.abc import AsyncGenerator
 
 import pytest
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from src.config.settings import settings
 
 
-@pytest.fixture(scope="session")
-async def engine() -> AsyncGenerator[AsyncEngine, None]:
-    """Create test database engine."""
-    test_engine = create_async_engine(settings.database_url, echo=False)
-    yield test_engine
-    await test_engine.dispose()
+@pytest.fixture(scope="function")
+async def session() -> AsyncGenerator[AsyncSession, None]:
+    """Create a fresh database session for each test.
 
+    Uses function scope to ensure complete isolation between tests,
+    preventing 'another operation is in progress' errors with asyncpg.
+    """
+    # Create engine for this test
+    engine = create_async_engine(
+        settings.database_url,
+        echo=False,
+        pool_pre_ping=True,
+        pool_size=5,
+        max_overflow=10,
+    )
 
-@pytest.fixture
-async def session(engine: AsyncEngine) -> AsyncGenerator[AsyncSession, None]:
-    """Create a database session for a test."""
-    async with AsyncSession(engine, expire_on_commit=False) as sess:
+    # Create session factory
+    async_session = async_sessionmaker(
+        engine,
+        class_=AsyncSession,
+        expire_on_commit=False,
+        autoflush=False,
+    )
+
+    async with async_session() as sess:
         yield sess
+
+    # Dispose engine after test
+    await engine.dispose()
