@@ -12,9 +12,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.data.database import get_session_maker
 from src.domain.dialog_service import DialogService
+from src.domain.message_service import MessageService
 from src.domain.model_registry import model_registry
 from src.domain.token_service import TokenService
 from src.integrations.jwt_validator import JWTClaims
+from src.integrations.llm_factory import get_llm_provider
 
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
@@ -93,6 +95,19 @@ def get_token_service() -> TokenService:
     return TokenService()
 
 
+def get_message_service() -> MessageService:
+    """Get MessageService instance.
+
+    Creates service with TokenService and LLM provider.
+    Uses OpenAI provider by default (can be changed based on model).
+    """
+    token_service = TokenService()
+    # Default to OpenAI provider - in production, select based on model
+    llm_provider = get_llm_provider("openai")
+    return MessageService(token_service, llm_provider)
+
+
 # Type aliases for service dependencies
 DialogServiceDep = Annotated[DialogService, Depends(get_dialog_service)]
 TokenServiceDep = Annotated[TokenService, Depends(get_token_service)]
+MessageServiceDep = Annotated[MessageService, Depends(get_message_service)]
