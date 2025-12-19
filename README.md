@@ -78,6 +78,25 @@ Rollback:
 alembic downgrade -1
 ```
 
+### Available Models
+
+The system is seeded with the following LLM models:
+
+**OpenAI:**
+- `gpt-4-turbo` - 128k context, $0.01/$0.03 per 1k tokens
+- `gpt-3.5-turbo` - 16k context, $0.0005/$0.0015 per 1k tokens
+
+**Anthropic:**
+- `claude-3-opus` - 200k context, $0.015/$0.075 per 1k tokens
+- `claude-3-sonnet` - 200k context, $0.003/$0.015 per 1k tokens
+
+View all models:
+```bash
+psql $DATABASE_URL -c "SELECT name, provider, context_window, enabled FROM models;"
+```
+
+**Note:** Admin API for updating model metadata will be implemented in a future epic.
+
 ### Testing
 
 Run all tests (from project root):
