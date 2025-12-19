@@ -105,7 +105,9 @@ class TestJWTAuthMiddleware:
         response = client.get("/api/v1/dialogs")
 
         assert response.status_code == 401
-        assert "Authorization header required" in response.json()["error"]
+        data = response.json()
+        assert data["code"] == "UNAUTHORIZED"
+        assert "Authorization header required" in data["message"]
 
     def test_invalid_token_returns_401(self, client):
         """Test invalid token returns 401."""
@@ -133,7 +135,7 @@ class TestJWTAuthMiddleware:
             )
 
             assert response.status_code == 401
-            assert "expired" in response.json()["error"].lower()
+            assert "expired" in response.json()["message"].lower()
 
     def test_valid_token_passes_auth(self, valid_token):
         """Test valid token passes authentication."""
@@ -218,7 +220,9 @@ class TestExceptionHandlers:
         response = test_client.get("/health/test-validation-error")
 
         assert response.status_code == 400
-        assert "Invalid input" in response.json()["error"]
+        data = response.json()
+        assert data["code"] == "VALIDATION_ERROR"
+        assert "Invalid input" in data["message"]
 
     def test_unauthorized_error_returns_401(self):
         """Test UnauthorizedError returns 401."""
@@ -232,7 +236,9 @@ class TestExceptionHandlers:
         response = test_client.get("/health/test-unauthorized")
 
         assert response.status_code == 401
-        assert "Not authenticated" in response.json()["error"]
+        data = response.json()
+        assert data["code"] == "UNAUTHORIZED"
+        assert "Not authenticated" in data["message"]
 
     def test_insufficient_tokens_error_returns_402(self):
         """Test InsufficientTokensError returns 402."""
@@ -246,7 +252,9 @@ class TestExceptionHandlers:
         response = test_client.get("/health/test-insufficient-tokens")
 
         assert response.status_code == 402
-        assert "Not enough tokens" in response.json()["error"]
+        data = response.json()
+        assert data["code"] == "INSUFFICIENT_TOKENS"
+        assert "Not enough tokens" in data["message"]
 
     def test_forbidden_error_returns_403(self):
         """Test ForbiddenError returns 403."""
@@ -260,7 +268,9 @@ class TestExceptionHandlers:
         response = test_client.get("/health/test-forbidden")
 
         assert response.status_code == 403
-        assert "Access denied" in response.json()["error"]
+        data = response.json()
+        assert data["code"] == "FORBIDDEN"
+        assert "Access denied" in data["message"]
 
     def test_not_found_error_returns_404(self):
         """Test NotFoundError returns 404."""
@@ -274,7 +284,9 @@ class TestExceptionHandlers:
         response = test_client.get("/health/test-not-found")
 
         assert response.status_code == 404
-        assert "Resource not found" in response.json()["error"]
+        data = response.json()
+        assert data["code"] == "NOT_FOUND"
+        assert "Resource not found" in data["message"]
 
     def test_llm_error_returns_500(self):
         """Test LLMError returns 500."""
@@ -288,7 +300,9 @@ class TestExceptionHandlers:
         response = test_client.get("/health/test-llm-error")
 
         assert response.status_code == 500
-        assert "LLM service failed" in response.json()["error"]
+        data = response.json()
+        assert data["code"] == "LLM_ERROR"
+        assert "LLM service failed" in data["message"]
 
     def test_llm_timeout_error_returns_504(self):
         """Test LLMTimeoutError returns 504."""
@@ -302,7 +316,9 @@ class TestExceptionHandlers:
         response = test_client.get("/health/test-llm-timeout")
 
         assert response.status_code == 504
-        assert "timed out" in response.json()["error"].lower()
+        data = response.json()
+        assert data["code"] == "LLM_TIMEOUT"
+        assert "timed out" in data["message"].lower()
 
     def test_generic_exception_returns_500(self):
         """Test unhandled exception returns 500."""
@@ -317,7 +333,71 @@ class TestExceptionHandlers:
         response = test_client.get("/health/test-generic-error")
 
         assert response.status_code == 500
-        assert "Internal server error" in response.json()["error"]
+        data = response.json()
+        assert data["code"] == "INTERNAL_ERROR"
+        assert "Internal server error" in data["message"]
+
+    def test_error_with_details_includes_details(self):
+        """Test error with details includes them in response."""
+        test_app = create_app()
+
+        @test_app.get("/health/test-error-details")
+        async def raise_with_details():
+            raise ValidationError(
+                "Invalid input",
+                details={"field": "email", "reason": "invalid format"}
+            )
+
+        test_client = TestClient(test_app)
+        response = test_client.get("/health/test-error-details")
+
+        assert response.status_code == 400
+        data = response.json()
+        assert data["code"] == "VALIDATION_ERROR"
+        assert "details" in data
+        assert data["details"]["field"] == "email"
+        assert data["details"]["reason"] == "invalid format"
+
+    def test_stack_trace_hidden_in_production(self):
+        """Test stack trace is hidden when debug=False."""
+        with patch("src.api.app.settings") as mock_settings:
+            mock_settings.debug = False
+            mock_settings.cors_origins = "*"
+
+            test_app = create_app()
+
+            @test_app.get("/health/test-production-error")
+            async def raise_error():
+                raise RuntimeError("Production error")
+
+            test_client = TestClient(test_app, raise_server_exceptions=False)
+            response = test_client.get("/health/test-production-error")
+
+            assert response.status_code == 500
+            data = response.json()
+            assert "details" not in data
+            assert "traceback" not in str(data)
+
+    def test_stack_trace_shown_in_debug_mode(self):
+        """Test stack trace is shown when debug=True."""
+        with patch("src.api.app.settings") as mock_settings:
+            mock_settings.debug = True
+            mock_settings.cors_origins = "*"
+
+            test_app = create_app()
+
+            @test_app.get("/health/test-debug-error")
+            async def raise_error():
+                raise RuntimeError("Debug error")
+
+            test_client = TestClient(test_app, raise_server_exceptions=False)
+            response = test_client.get("/health/test-debug-error")
+
+            assert response.status_code == 500
+            data = response.json()
+            assert "details" in data
+            assert "traceback" in data["details"]
+            assert "Debug error" in data["details"]["exception"]
 
 
 class TestRequestContext:

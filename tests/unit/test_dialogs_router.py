@@ -260,7 +260,9 @@ class TestDialogsRouterWithAuth:
         response = client.post("/api/v1/dialogs", json={"title": "Test"})
 
         assert response.status_code == 401
-        assert "Authorization header required" in response.json()["error"]
+        data = response.json()
+        assert data["code"] == "UNAUTHORIZED"
+        assert "Authorization header required" in data["message"]
 
     def test_invalid_token_returns_401(self):
         """Test invalid token returns 401."""

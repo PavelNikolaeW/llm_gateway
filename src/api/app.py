@@ -113,69 +113,121 @@ def _configure_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(ValidationError)
     async def validation_error_handler(request: Request, exc: ValidationError) -> JSONResponse:
-        return _create_error_response(exc, 400)
+        return _create_error_response(exc, 400, request)
 
     @app.exception_handler(UnauthorizedError)
     async def unauthorized_error_handler(request: Request, exc: UnauthorizedError) -> JSONResponse:
-        return _create_error_response(exc, 401)
+        return _create_error_response(exc, 401, request)
 
     @app.exception_handler(InsufficientTokensError)
     async def insufficient_tokens_error_handler(
         request: Request, exc: InsufficientTokensError
     ) -> JSONResponse:
-        return _create_error_response(exc, 402)
+        return _create_error_response(exc, 402, request)
 
     @app.exception_handler(ForbiddenError)
     async def forbidden_error_handler(request: Request, exc: ForbiddenError) -> JSONResponse:
-        return _create_error_response(exc, 403)
+        return _create_error_response(exc, 403, request)
 
     @app.exception_handler(NotFoundError)
     async def not_found_error_handler(request: Request, exc: NotFoundError) -> JSONResponse:
-        return _create_error_response(exc, 404)
+        return _create_error_response(exc, 404, request)
 
     @app.exception_handler(LLMTimeoutError)
     async def llm_timeout_error_handler(request: Request, exc: LLMTimeoutError) -> JSONResponse:
-        return _create_error_response(exc, 504)
+        return _create_error_response(exc, 504, request)
 
     @app.exception_handler(LLMError)
     async def llm_error_handler(request: Request, exc: LLMError) -> JSONResponse:
-        return _create_error_response(exc, 500)
+        return _create_error_response(exc, 500, request)
 
     @app.exception_handler(ApplicationError)
     async def application_error_handler(
         request: Request, exc: ApplicationError
     ) -> JSONResponse:
-        return _create_error_response(exc, exc.status_code)
+        return _create_error_response(exc, exc.status_code, request)
 
     @app.exception_handler(Exception)
     async def generic_error_handler(request: Request, exc: Exception) -> JSONResponse:
-        logger.exception(f"Unhandled error: {exc}")
-        return JSONResponse(
-            status_code=500,
-            content={
-                "error": "Internal server error",
-                "request_id": request_id_ctx.get(),
+        request_id = request_id_ctx.get()
+
+        # Log with full context and stack trace
+        logger.exception(
+            f"Unhandled error: {exc}",
+            extra={
+                "error_code": "INTERNAL_ERROR",
+                "status_code": 500,
+                "request_id": request_id,
+                "user_id": user_id_ctx.get(),
+                "path": request.url.path,
+                "method": request.method,
             },
         )
 
+        # Build response - include stack trace only in debug mode
+        content: dict = {
+            "code": "INTERNAL_ERROR",
+            "message": "Internal server error",
+            "request_id": request_id,
+        }
 
-def _create_error_response(exc: ApplicationError, status_code: int) -> JSONResponse:
+        if settings.debug:
+            import traceback
+            content["details"] = {
+                "exception": str(exc),
+                "traceback": traceback.format_exc(),
+            }
+
+        return JSONResponse(status_code=500, content=content)
+
+
+def _create_error_response(
+    exc: ApplicationError,
+    status_code: int,
+    request: Request | None = None,
+) -> JSONResponse:
     """Create standardized error response.
 
     Args:
         exc: Application exception
         status_code: HTTP status code
+        request: Optional request for logging context
 
     Returns:
-        JSON response with error details
+        JSON response with error details in format:
+        {code: string, message: string, details?: object, request_id: string}
     """
-    return JSONResponse(
-        status_code=status_code,
-        content={
-            "error": exc.message,
-            "request_id": request_id_ctx.get(),
-        },
-    )
+    request_id = request_id_ctx.get()
+
+    # Log error with structured context
+    log_context = {
+        "error_code": exc.code,
+        "status_code": status_code,
+        "request_id": request_id,
+        "user_id": user_id_ctx.get(),
+    }
+    if request:
+        log_context["path"] = request.url.path
+        log_context["method"] = request.method
+
+    # Log at appropriate level
+    if status_code >= 500:
+        logger.error(f"Server error: {exc.message}", extra=log_context)
+    else:
+        logger.warning(f"Client error: {exc.message}", extra=log_context)
+
+    # Build response content
+    content: dict = {
+        "code": exc.code,
+        "message": exc.message,
+        "request_id": request_id,
+    }
+
+    # Include details if present (but never in production for 500 errors)
+    if exc.details and (status_code < 500 or settings.debug):
+        content["details"] = exc.details
+
+    return JSONResponse(status_code=status_code, content=content)
 
 
 def _register_routes(app: FastAPI) -> None:
@@ -306,7 +358,8 @@ class JWTAuthMiddleware(BaseHTTPMiddleware):
             return JSONResponse(
                 status_code=401,
                 content={
-                    "error": "Authorization header required",
+                    "code": "UNAUTHORIZED",
+                    "message": "Authorization header required",
                     "request_id": request_id_ctx.get(),
                 },
             )
@@ -330,7 +383,8 @@ class JWTAuthMiddleware(BaseHTTPMiddleware):
             return JSONResponse(
                 status_code=401,
                 content={
-                    "error": e.message,
+                    "code": e.code,
+                    "message": e.message,
                     "request_id": request_id_ctx.get(),
                 },
             )
