@@ -1,9 +1,9 @@
 # Epic Progress Tracker
 
 ## Summary
-- **Completed**: 30/47
-- **Tests**: 413 passing
-- **Last Updated**: PACK-030
+- **Completed**: 31/47
+- **Tests**: 426 passing
+- **Last Updated**: PACK-031
 
 ## Completed
 
@@ -39,12 +39,12 @@
 | PACK-028 | Integration Tests - Dialogs | Auth, validation, response format, public endpoints, 18 tests |
 | PACK-029 | Integration Tests - Messages | Auth, validation, request format, 12 tests |
 | PACK-030 | Integration Tests - Tokens | Auth, response format, database model, 5 tests |
+| PACK-031 | Integration Tests - Admin | Auth, authorization (403), validation, 14 tests |
 
 ## Pending
 
 | Pack | Title |
 |------|-------|
-| PACK-031 | Integration Tests - Admin |
 | PACK-032 | E2E Tests - Chat Flow |
 | PACK-033 | E2E Tests - Token Lifecycle |
 | PACK-034 | Load Testing Setup |
