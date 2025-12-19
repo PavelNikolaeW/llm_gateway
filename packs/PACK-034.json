@@ -1,0 +1,47 @@
+{
+  "v": 1,
+  "pack_id": "PACK-034",
+  "title": "EPIC-007: Unit Tests - Domain Logic & Use Cases",
+  "epic": {
+    "id": "EPIC-007",
+    "title": "Testing Strategy - Unit, Integration, E2E",
+    "goal": "Implement comprehensive testing across layers: unit tests for domain logic, integration tests for DB/LLM, E2E tests for API endpoints, achieve >80% coverage"
+  },
+  "stories": [
+    "STORY-034"
+  ],
+  "story_type": "test",
+  "related_nodes": [
+    25,
+    39
+  ],
+  "depends_on": [
+    "STORY-005",
+    "STORY-006",
+    "STORY-007",
+    "STORY-008",
+    "STORY-009"
+  ],
+  "deliverables": [
+    "Production-ready implementation strictly for this story scope",
+    "Automated tests required by acceptance criteria",
+    "Minimal documentation/README updates required to run/test the change"
+  ],
+  "acceptance_criteria": [
+    "pytest + pytest-asyncio configured",
+    "Unit tests for Dialog Manager: create, retrieve, list dialogs with ownership checks",
+    "Unit tests for Token Controller: balance check, deduction, top-up, insufficient tokens, race conditions (mock DB)",
+    "Unit tests for Message Handler: append message, call LLM, stream response, save messages, deduct tokens (mock Integrations and Data Access)",
+    "Unit tests for Model Registry: load models, validate model name, calculate cost",
+    "Unit tests for Agent Configurator: validate agent config, merge settings",
+    "Coverage >80% for domain layer (pytest-cov)",
+    "Mocks use unittest.mock or pytest-mock",
+    "Run in CI on every PR"
+  ],
+  "description": "Write unit tests for domain components (Dialog Manager, Message Handler, Token Controller, Model Registry, Agent Configurator) with mocked dependencies, achieve >80% coverage.",
+  "constraints": {
+    "no_arch_changes": true,
+    "no_scope_creep": true,
+    "follow_graph": true
+  }
+}

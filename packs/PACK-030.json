@@ -1,0 +1,47 @@
+{
+  "v": 1,
+  "pack_id": "PACK-030",
+  "title": "EPIC-006: Kubernetes Manifests - Deployment, Service, Ingress",
+  "epic": {
+    "id": "EPIC-006",
+    "title": "Infrastructure - Observability, CI/CD, Runtime, Secrets",
+    "goal": "Set up production infrastructure: containerization, Kubernetes/ECS deployment, CI/CD pipeline, centralized logging, metrics, alerting, secret management"
+  },
+  "stories": [
+    "STORY-030"
+  ],
+  "story_type": "infra",
+  "related_nodes": [
+    9,
+    16,
+    49,
+    55,
+    57
+  ],
+  "depends_on": [
+    "STORY-028"
+  ],
+  "deliverables": [
+    "Production-ready implementation strictly for this story scope",
+    "Automated tests required by acceptance criteria",
+    "Minimal documentation/README updates required to run/test the change"
+  ],
+  "acceptance_criteria": [
+    "Deployment: 3 replicas, resource requests (CPU 500m, memory 512Mi), limits (CPU 1, memory 1Gi)",
+    "Liveness probe: GET /health every 10s, failure threshold 3",
+    "Readiness probe: GET /health every 5s, success threshold 1 (wait for DB connection)",
+    "Service: ClusterIP, port 80 -> container 8000",
+    "Ingress: HTTPS termination (cert-manager), route / to service",
+    "ConfigMap: non-secret config (LOG_LEVEL, CORS_ORIGINS)",
+    "Secret: DB_PASSWORD, JWT_SECRET, OPENAI_API_KEY, ANTHROPIC_API_KEY (encrypted in etcd)",
+    "HPA: scale on CPU >70%, min 3, max 10 replicas",
+    "Network policy: allow ingress from ingress controller, egress to DB/Redis/LLM providers",
+    "Deploy to staging cluster, verify health"
+  ],
+  "description": "Create Kubernetes manifests for deployment: Deployment (replicas, resource limits, probes), Service (ClusterIP), Ingress (HTTPS termination), ConfigMap, Secret.",
+  "constraints": {
+    "no_arch_changes": true,
+    "no_scope_creep": true,
+    "follow_graph": true
+  }
+}

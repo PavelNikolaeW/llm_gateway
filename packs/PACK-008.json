@@ -1,0 +1,44 @@
+{
+  "v": 1,
+  "pack_id": "PACK-008",
+  "title": "EPIC-002: Agent Configurator - Define, Validate, Apply",
+  "epic": {
+    "id": "EPIC-002",
+    "title": "Core Domain Logic & Business Rules",
+    "goal": "Implement dialog management, message handling, token accounting, model selection, and agent configuration with enforcement of business rules"
+  },
+  "stories": [
+    "STORY-008"
+  ],
+  "story_type": "feature",
+  "related_nodes": [
+    15,
+    25,
+    32,
+    33,
+    52,
+    65,
+    77
+  ],
+  "depends_on": [
+    "STORY-007"
+  ],
+  "deliverables": [
+    "Production-ready implementation strictly for this story scope",
+    "Automated tests required by acceptance criteria",
+    "Minimal documentation/README updates required to run/test the change"
+  ],
+  "acceptance_criteria": [
+    "Agent types defined: default (temperature=0.7), code_assistant (temperature=0.2, max_tokens=4096), creative_writer (temperature=0.9)",
+    "Validate agent config: temperature 0-1, max_tokens > 0 and <= model context_window",
+    "Merge agent config with dialog settings (agent config takes precedence or vice versa, document)",
+    "Return 400 if invalid agent name or config ranges",
+    "Unit tests cover validation, merging logic"
+  ],
+  "description": "Implement agent configurator: define agent types (default, code_assistant, creative_writer), validate agent config (temperature, max_tokens), merge with dialog settings.",
+  "constraints": {
+    "no_arch_changes": true,
+    "no_scope_creep": true,
+    "follow_graph": true
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "v": 1,
+  "pack_id": "PACK-001",
+  "title": "EPIC-001: PostgreSQL Database Schema & Migrations",
+  "epic": {
+    "id": "EPIC-001",
+    "title": "Data Platform Foundation",
+    "goal": "Establish persistent storage, schema, migrations, and core data access layer to support all backend operations"
+  },
+  "stories": [
+    "STORY-001"
+  ],
+  "story_type": "infra",
+  "related_nodes": [
+    20,
+    24,
+    28,
+    31,
+    34,
+    41,
+    48,
+    54,
+    72,
+    74,
+    75
+  ],
+  "depends_on": [],
+  "deliverables": [
+    "Production-ready implementation strictly for this story scope",
+    "Automated tests required by acceptance criteria",
+    "Minimal documentation/README updates required to run/test the change"
+  ],
+  "acceptance_criteria": [
+    "Tables created: dialogs (id, user_id, title, system_prompt, model_name, agent_config, created_at, updated_at)",
+    "Tables created: messages (id, dialog_id, role, content, prompt_tokens, completion_tokens, created_at)",
+    "Tables created: token_balances (user_id PK, balance, limit, updated_at)",
+    "Tables created: token_transactions (id, user_id, amount, reason, dialog_id, message_id, admin_user_id, created_at)",
+    "Tables created: models (name PK, provider, cost_per_1k_prompt_tokens, cost_per_1k_completion_tokens, context_window, enabled, created_at, updated_at)",
+    "Indexes created: user_id on dialogs, dialog_id on messages, user_id on token_transactions",
+    "Unique constraint on token_transactions (message_id, reason) to prevent double deduction",
+    "Alembic initialized with initial migration script",
+    "Migration runs successfully on empty PostgreSQL 15+ database"
+  ],
+  "description": "Create initial database schema with tables: dialogs, messages, token_balances, token_transactions, models. Set up Alembic for schema versioning and migration management.",
+  "constraints": {
+    "no_arch_changes": true,
+    "no_scope_creep": true,
+    "follow_graph": true
+  }
+}

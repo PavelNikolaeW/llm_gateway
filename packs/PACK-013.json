@@ -1,0 +1,43 @@
+{
+  "v": 1,
+  "pack_id": "PACK-013",
+  "title": "EPIC-003: JWT Validator - Signature Verification & Claims Extraction",
+  "epic": {
+    "id": "EPIC-003",
+    "title": "External Integrations - LLM Providers & Auth",
+    "goal": "Integrate with OpenAI and Anthropic APIs for LLM chat, implement JWT validation for authentication"
+  },
+  "stories": [
+    "STORY-013"
+  ],
+  "story_type": "security",
+  "related_nodes": [
+    1,
+    14,
+    26,
+    40,
+    56,
+    67,
+    71
+  ],
+  "depends_on": [],
+  "deliverables": [
+    "Production-ready implementation strictly for this story scope",
+    "Automated tests required by acceptance criteria",
+    "Minimal documentation/README updates required to run/test the change"
+  ],
+  "acceptance_criteria": [
+    "Validate JWT signature using PyJWT library",
+    "Support HS256 (shared secret from env var JWT_SECRET) and RS256 (JWKS endpoint from env var JWT_JWKS_URL)",
+    "Extract claims: user_id, is_admin, exp, iat, nbf",
+    "Return 401 if expired, invalid signature, malformed token, or nbf not yet valid",
+    "Cache JWKS keys (TTL 1 hour) if RS256",
+    "Unit tests with valid/invalid/expired tokens, integration tests with test JWKS server"
+  ],
+  "description": "Implement JWT validator: verify signature (HS256 or RS256), extract claims (user_id, is_admin), check expiry and nbf, cache JWKS keys if RS256.",
+  "constraints": {
+    "no_arch_changes": true,
+    "no_scope_creep": true,
+    "follow_graph": true
+  }
+}

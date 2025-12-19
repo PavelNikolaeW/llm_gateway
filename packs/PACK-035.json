@@ -1,0 +1,45 @@
+{
+  "v": 1,
+  "pack_id": "PACK-035",
+  "title": "EPIC-007: Integration Tests - Database & LLM Providers",
+  "epic": {
+    "id": "EPIC-007",
+    "title": "Testing Strategy - Unit, Integration, E2E",
+    "goal": "Implement comprehensive testing across layers: unit tests for domain logic, integration tests for DB/LLM, E2E tests for API endpoints, achieve >80% coverage"
+  },
+  "stories": [
+    "STORY-035"
+  ],
+  "story_type": "test",
+  "related_nodes": [
+    1,
+    24,
+    39
+  ],
+  "depends_on": [
+    "STORY-002",
+    "STORY-010",
+    "STORY-011",
+    "STORY-012"
+  ],
+  "deliverables": [
+    "Production-ready implementation strictly for this story scope",
+    "Automated tests required by acceptance criteria",
+    "Minimal documentation/README updates required to run/test the change"
+  ],
+  "acceptance_criteria": [
+    "testcontainers for PostgreSQL (spin up/teardown per test suite)",
+    "Integration tests for Data Access: CRUD on dialogs, messages, token_balances, token_transactions, models",
+    "Integration tests for transaction: save messages + deduct tokens (atomic commit/rollback)",
+    "httpx mock for LLM providers (OpenAI, Anthropic), test streaming and non-streaming",
+    "Test end-to-end flow: create dialog -> send message -> LLM response -> save messages -> deduct tokens",
+    "Cleanup test data after each test (rollback or truncate tables)",
+    "Run in CI on every PR"
+  ],
+  "description": "Write integration tests with real PostgreSQL (testcontainers) and mocked LLM providers (httpx mock), test Data Access layer, end-to-end message flow.",
+  "constraints": {
+    "no_arch_changes": true,
+    "no_scope_creep": true,
+    "follow_graph": true
+  }
+}

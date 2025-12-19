@@ -1,0 +1,46 @@
+{
+  "v": 1,
+  "pack_id": "PACK-024",
+  "title": "EPIC-005: Global Error Handlers - Structured Error Responses",
+  "epic": {
+    "id": "EPIC-005",
+    "title": "Cross-Cutting Concerns - Auth, Validation, Errors, Observability, Config",
+    "goal": "Implement production-ready concerns: JWT auth middleware, input validation, error handling, structured logging, metrics, configuration management"
+  },
+  "stories": [
+    "STORY-024"
+  ],
+  "story_type": "tech",
+  "related_nodes": [
+    6,
+    7,
+    23,
+    47,
+    58,
+    59,
+    61,
+    71
+  ],
+  "depends_on": [
+    "STORY-014"
+  ],
+  "deliverables": [
+    "Production-ready implementation strictly for this story scope",
+    "Automated tests required by acceptance criteria",
+    "Minimal documentation/README updates required to run/test the change"
+  ],
+  "acceptance_criteria": [
+    "Exception handlers for InsufficientTokensError (402), DialogNotFoundError (404), ValidationError (422), LLMProviderError (500/504), etc.",
+    "Error response format: {code: string, message: string, details?: object}",
+    "Log all errors with structured context (user_id, request_id, endpoint, stack trace in dev only)",
+    "Never expose stack traces in production (env var DEBUG=false)",
+    "Sanitize PII in error messages (no user content, token values)",
+    "Unit tests verify error mappings, integration tests check error response format"
+  ],
+  "description": "Implement FastAPI exception handlers to map domain exceptions to HTTP status codes, format error responses (code, message, details), log errors, sanitize sensitive info.",
+  "constraints": {
+    "no_arch_changes": true,
+    "no_scope_creep": true,
+    "follow_graph": true
+  }
+}

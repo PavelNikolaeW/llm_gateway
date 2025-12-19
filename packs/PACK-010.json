@@ -1,0 +1,45 @@
+{
+  "v": 1,
+  "pack_id": "PACK-010",
+  "title": "EPIC-003: OpenAI Client Adapter - Chat Completions & Streaming",
+  "epic": {
+    "id": "EPIC-003",
+    "title": "External Integrations - LLM Providers & Auth",
+    "goal": "Integrate with OpenAI and Anthropic APIs for LLM chat, implement JWT validation for authentication"
+  },
+  "stories": [
+    "STORY-010"
+  ],
+  "story_type": "feature",
+  "related_nodes": [
+    1,
+    14,
+    26,
+    40,
+    56,
+    67,
+    71
+  ],
+  "depends_on": [],
+  "deliverables": [
+    "Production-ready implementation strictly for this story scope",
+    "Automated tests required by acceptance criteria",
+    "Minimal documentation/README updates required to run/test the change"
+  ],
+  "acceptance_criteria": [
+    "Async client using openai Python SDK or httpx",
+    "send_message(model, messages, system_prompt, stream) -> AsyncIterator[str] or str",
+    "get_usage() -> TokenUsage (prompt_tokens, completion_tokens)",
+    "Streaming via async iterator, yield message chunks",
+    "Timeout 30s, connection pooling enabled",
+    "API key from secrets (env var OPENAI_API_KEY), never logged",
+    "Handle errors: 401 (invalid key) -> 500, 429 (rate limit) -> 429, timeout -> 504",
+    "Unit tests with httpx mock, integration tests with OpenAI API (optional, use mock in CI)"
+  ],
+  "description": "Implement async adapter for OpenAI API: send chat completions (streaming and non-streaming), handle token usage, manage timeouts and retries.",
+  "constraints": {
+    "no_arch_changes": true,
+    "no_scope_creep": true,
+    "follow_graph": true
+  }
+}

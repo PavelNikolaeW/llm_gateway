@@ -1,0 +1,81 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "llm-gateway"
+version = "0.1.0"
+description = "LLM Gateway API - Chat interface with token management"
+requires-python = ">=3.11"
+dependencies = [
+    # Web Framework
+    "fastapi>=0.109.0",
+    "uvicorn[standard]>=0.27.0",
+    "pydantic>=2.5.0",
+    "pydantic-settings>=2.1.0",
+
+    # Database
+    "sqlalchemy[asyncio]>=2.0.25",
+    "asyncpg>=0.29.0",
+    "alembic>=1.13.0",
+
+    # Redis (optional cache)
+    "redis[hiredis]>=5.0.1",
+
+    # LLM Providers
+    "openai>=1.10.0",
+    "anthropic>=0.18.0",
+
+    # Auth
+    "pyjwt>=2.8.0",
+    "cryptography>=42.0.0",
+
+    # HTTP Client
+    "httpx>=0.26.0",
+
+    # Observability
+    "structlog>=24.1.0",
+    "prometheus-client>=0.19.0",
+
+    # Utilities
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    # Testing
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.12.0",
+    "httpx>=0.26.0",
+
+    # Code Quality
+    "ruff>=0.1.0",
+    "mypy>=1.8.0",
+    "black>=24.0.0",
+
+    # Database Testing
+    "pytest-postgresql>=5.0.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = "-v --cov=src --cov-report=html --cov-report=term"
+
+[tool.black]
+line-length = 100
+target-version = ['py311']
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+ignore_missing_imports = true

@@ -1,0 +1,40 @@
+{
+  "v": 1,
+  "pack_id": "PACK-044",
+  "title": "EPIC-010: User Journey Validation - Manage Dialogs",
+  "epic": {
+    "id": "EPIC-010",
+    "title": "User Journeys & System Events",
+    "goal": "Validate end-to-end user journeys (chat, manage dialogs, check balance, admin operations) and implement system events for observability and auditing"
+  },
+  "stories": [
+    "STORY-044"
+  ],
+  "story_type": "test",
+  "related_nodes": [
+    5,
+    27,
+    70
+  ],
+  "depends_on": [
+    "STORY-036"
+  ],
+  "deliverables": [
+    "Production-ready implementation strictly for this story scope",
+    "Automated tests required by acceptance criteria",
+    "Minimal documentation/README updates required to run/test the change"
+  ],
+  "acceptance_criteria": [
+    "Happy path: user creates dialog with custom model and system_prompt, lists dialogs (paginated), retrieves dialog by ID",
+    "Validate: dialog settings persisted, list returns user's dialogs only, retrieve checks ownership",
+    "Error scenarios: invalid model name -> 400, dialog not found -> 404, access another user's dialog -> 403 (unless admin)",
+    "Test with real PostgreSQL",
+    "E2E test in CI"
+  ],
+  "description": "Validate end-to-end user journey: create dialog with custom settings (model, system_prompt, agent), list dialogs, retrieve dialog.",
+  "constraints": {
+    "no_arch_changes": true,
+    "no_scope_creep": true,
+    "follow_graph": true
+  }
+}

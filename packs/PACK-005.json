@@ -1,0 +1,49 @@
+{
+  "v": 1,
+  "pack_id": "PACK-005",
+  "title": "EPIC-002: Dialog Manager - Create, Retrieve, List",
+  "epic": {
+    "id": "EPIC-002",
+    "title": "Core Domain Logic & Business Rules",
+    "goal": "Implement dialog management, message handling, token accounting, model selection, and agent configuration with enforcement of business rules"
+  },
+  "stories": [
+    "STORY-005"
+  ],
+  "story_type": "feature",
+  "related_nodes": [
+    8,
+    15,
+    19,
+    25,
+    32,
+    33,
+    45,
+    52,
+    65,
+    77
+  ],
+  "depends_on": [
+    "STORY-002",
+    "STORY-004"
+  ],
+  "deliverables": [
+    "Production-ready implementation strictly for this story scope",
+    "Automated tests required by acceptance criteria",
+    "Minimal documentation/README updates required to run/test the change"
+  ],
+  "acceptance_criteria": [
+    "Create dialog with user_id, optional title, system_prompt, model_name, agent_config",
+    "Default model applied if not specified (from Model Registry)",
+    "Retrieve dialog by ID, verify ownership (user_id match or is_admin=true)",
+    "List dialogs for user_id, paginated (default page size 20), ordered by created_at desc",
+    "Return 400 if invalid model_name, 403 if not owned, 404 if not found",
+    "Unit tests with mocked Data Access, integration tests with DB"
+  ],
+  "description": "Implement dialog management: create dialogs with settings (model, system_prompt, agent_config), retrieve by ID with ownership check, list user's dialogs with pagination.",
+  "constraints": {
+    "no_arch_changes": true,
+    "no_scope_creep": true,
+    "follow_graph": true
+  }
+}

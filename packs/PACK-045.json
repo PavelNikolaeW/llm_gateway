@@ -1,0 +1,40 @@
+{
+  "v": 1,
+  "pack_id": "PACK-045",
+  "title": "EPIC-010: User Journey Validation - Check Token Balance",
+  "epic": {
+    "id": "EPIC-010",
+    "title": "User Journeys & System Events",
+    "goal": "Validate end-to-end user journeys (chat, manage dialogs, check balance, admin operations) and implement system events for observability and auditing"
+  },
+  "stories": [
+    "STORY-045"
+  ],
+  "story_type": "test",
+  "related_nodes": [
+    5,
+    12,
+    70
+  ],
+  "depends_on": [
+    "STORY-036"
+  ],
+  "deliverables": [
+    "Production-ready implementation strictly for this story scope",
+    "Automated tests required by acceptance criteria",
+    "Minimal documentation/README updates required to run/test the change"
+  ],
+  "acceptance_criteria": [
+    "Happy path: user calls GET /users/me/tokens, receives balance, total_used, limit",
+    "Validate: balance reflects deductions from previous messages",
+    "New user: default balance (0 or initial grant per config)",
+    "Test with real PostgreSQL",
+    "E2E test in CI"
+  ],
+  "description": "Validate end-to-end user journey: check token balance, view usage stats.",
+  "constraints": {
+    "no_arch_changes": true,
+    "no_scope_creep": true,
+    "follow_graph": true
+  }
+}

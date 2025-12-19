@@ -1,0 +1,493 @@
+{
+  "v": 1,
+  "source": "backlog_plan.json",
+  "pack_count": 47,
+  "packs": [
+    {
+      "pack_id": "PACK-001",
+      "stories": [
+        "STORY-001"
+      ],
+      "depends_on": [],
+      "title": "EPIC-001: PostgreSQL Database Schema & Migrations"
+    },
+    {
+      "pack_id": "PACK-002",
+      "stories": [
+        "STORY-002"
+      ],
+      "depends_on": [
+        "STORY-001"
+      ],
+      "title": "EPIC-001: Data Access Layer with AsyncPG ORM"
+    },
+    {
+      "pack_id": "PACK-003",
+      "stories": [
+        "STORY-003"
+      ],
+      "depends_on": [
+        "STORY-002"
+      ],
+      "title": "EPIC-001: Redis Cache for Token Limits & Metadata"
+    },
+    {
+      "pack_id": "PACK-004",
+      "stories": [
+        "STORY-004"
+      ],
+      "depends_on": [
+        "STORY-001"
+      ],
+      "title": "EPIC-001: Seed Models Configuration"
+    },
+    {
+      "pack_id": "PACK-005",
+      "stories": [
+        "STORY-005"
+      ],
+      "depends_on": [
+        "STORY-002",
+        "STORY-004"
+      ],
+      "title": "EPIC-002: Dialog Manager - Create, Retrieve, List"
+    },
+    {
+      "pack_id": "PACK-006",
+      "stories": [
+        "STORY-006"
+      ],
+      "depends_on": [
+        "STORY-002",
+        "STORY-003"
+      ],
+      "title": "EPIC-002: Token Controller - Balance Check, Deduction, Top-Up"
+    },
+    {
+      "pack_id": "PACK-007",
+      "stories": [
+        "STORY-007"
+      ],
+      "depends_on": [
+        "STORY-004"
+      ],
+      "title": "EPIC-002: Model Registry - Load, Validate, Select"
+    },
+    {
+      "pack_id": "PACK-008",
+      "stories": [
+        "STORY-008"
+      ],
+      "depends_on": [
+        "STORY-007"
+      ],
+      "title": "EPIC-002: Agent Configurator - Define, Validate, Apply"
+    },
+    {
+      "pack_id": "PACK-009",
+      "stories": [
+        "STORY-009"
+      ],
+      "depends_on": [
+        "STORY-005",
+        "STORY-006",
+        "STORY-007",
+        "STORY-008"
+      ],
+      "title": "EPIC-002: Message Handler - Streaming, Saving, Token Deduction"
+    },
+    {
+      "pack_id": "PACK-010",
+      "stories": [
+        "STORY-010"
+      ],
+      "depends_on": [],
+      "title": "EPIC-003: OpenAI Client Adapter - Chat Completions & Streaming"
+    },
+    {
+      "pack_id": "PACK-011",
+      "stories": [
+        "STORY-011"
+      ],
+      "depends_on": [],
+      "title": "EPIC-003: Anthropic Client Adapter - Messages API & Streaming"
+    },
+    {
+      "pack_id": "PACK-012",
+      "stories": [
+        "STORY-012"
+      ],
+      "depends_on": [
+        "STORY-010",
+        "STORY-011"
+      ],
+      "title": "EPIC-003: LLM Provider Factory - Dynamic Selection"
+    },
+    {
+      "pack_id": "PACK-013",
+      "stories": [
+        "STORY-013"
+      ],
+      "depends_on": [],
+      "title": "EPIC-003: JWT Validator - Signature Verification & Claims Extraction"
+    },
+    {
+      "pack_id": "PACK-014",
+      "stories": [
+        "STORY-014"
+      ],
+      "depends_on": [
+        "STORY-013"
+      ],
+      "title": "EPIC-004: API Layer - FastAPI App Setup & Middleware"
+    },
+    {
+      "pack_id": "PACK-015",
+      "stories": [
+        "STORY-015"
+      ],
+      "depends_on": [
+        "STORY-014",
+        "STORY-005"
+      ],
+      "title": "EPIC-004: POST /dialogs - Create Dialog"
+    },
+    {
+      "pack_id": "PACK-016",
+      "stories": [
+        "STORY-016"
+      ],
+      "depends_on": [
+        "STORY-014",
+        "STORY-005"
+      ],
+      "title": "EPIC-004: GET /dialogs - List User Dialogs"
+    },
+    {
+      "pack_id": "PACK-017",
+      "stories": [
+        "STORY-017"
+      ],
+      "depends_on": [
+        "STORY-014",
+        "STORY-005"
+      ],
+      "title": "EPIC-004: GET /dialogs/{id} - Retrieve Dialog"
+    },
+    {
+      "pack_id": "PACK-018",
+      "stories": [
+        "STORY-018"
+      ],
+      "depends_on": [
+        "STORY-014",
+        "STORY-009",
+        "STORY-012"
+      ],
+      "title": "EPIC-004: POST /dialogs/{id}/messages - Chat with LLM (Streaming)"
+    },
+    {
+      "pack_id": "PACK-019",
+      "stories": [
+        "STORY-019"
+      ],
+      "depends_on": [
+        "STORY-014",
+        "STORY-006"
+      ],
+      "title": "EPIC-004: GET /users/me/tokens - Check Token Balance"
+    },
+    {
+      "pack_id": "PACK-020",
+      "stories": [
+        "STORY-020"
+      ],
+      "depends_on": [
+        "STORY-014",
+        "STORY-006"
+      ],
+      "title": "EPIC-004: Admin Endpoints - Manage Users & Tokens"
+    },
+    {
+      "pack_id": "PACK-021",
+      "stories": [
+        "STORY-021"
+      ],
+      "depends_on": [
+        "STORY-014",
+        "STORY-020"
+      ],
+      "title": "EPIC-004: GET /admin/stats - Global Usage Statistics"
+    },
+    {
+      "pack_id": "PACK-022",
+      "stories": [
+        "STORY-022"
+      ],
+      "depends_on": [
+        "STORY-013",
+        "STORY-014"
+      ],
+      "title": "EPIC-005: Auth Middleware - JWT Verification & Claims Injection"
+    },
+    {
+      "pack_id": "PACK-023",
+      "stories": [
+        "STORY-023"
+      ],
+      "depends_on": [
+        "STORY-014"
+      ],
+      "title": "EPIC-005: Request Validation - Pydantic Models & Business Rules"
+    },
+    {
+      "pack_id": "PACK-024",
+      "stories": [
+        "STORY-024"
+      ],
+      "depends_on": [
+        "STORY-014"
+      ],
+      "title": "EPIC-005: Global Error Handlers - Structured Error Responses"
+    },
+    {
+      "pack_id": "PACK-025",
+      "stories": [
+        "STORY-025"
+      ],
+      "depends_on": [
+        "STORY-014"
+      ],
+      "title": "EPIC-005: Structured Logging - JSON Format & Context"
+    },
+    {
+      "pack_id": "PACK-026",
+      "stories": [
+        "STORY-026"
+      ],
+      "depends_on": [
+        "STORY-014"
+      ],
+      "title": "EPIC-005: Metrics - Prometheus Exporter"
+    },
+    {
+      "pack_id": "PACK-027",
+      "stories": [
+        "STORY-027"
+      ],
+      "depends_on": [],
+      "title": "EPIC-005: Configuration Management - Env Vars & Validation"
+    },
+    {
+      "pack_id": "PACK-028",
+      "stories": [
+        "STORY-028"
+      ],
+      "depends_on": [],
+      "title": "EPIC-006: Dockerfile - Multi-Stage Build"
+    },
+    {
+      "pack_id": "PACK-029",
+      "stories": [
+        "STORY-029"
+      ],
+      "depends_on": [
+        "STORY-028"
+      ],
+      "title": "EPIC-006: CI/CD Pipeline - GitHub Actions"
+    },
+    {
+      "pack_id": "PACK-030",
+      "stories": [
+        "STORY-030"
+      ],
+      "depends_on": [
+        "STORY-028"
+      ],
+      "title": "EPIC-006: Kubernetes Manifests - Deployment, Service, Ingress"
+    },
+    {
+      "pack_id": "PACK-031",
+      "stories": [
+        "STORY-031"
+      ],
+      "depends_on": [
+        "STORY-025",
+        "STORY-030"
+      ],
+      "title": "EPIC-006: Centralized Logging - Loki/ELK Integration"
+    },
+    {
+      "pack_id": "PACK-032",
+      "stories": [
+        "STORY-032"
+      ],
+      "depends_on": [
+        "STORY-026",
+        "STORY-030"
+      ],
+      "title": "EPIC-006: Metrics & Alerting - Prometheus & Grafana"
+    },
+    {
+      "pack_id": "PACK-033",
+      "stories": [
+        "STORY-033"
+      ],
+      "depends_on": [
+        "STORY-030"
+      ],
+      "title": "EPIC-006: Secret Management - K8s Secrets & Rotation"
+    },
+    {
+      "pack_id": "PACK-034",
+      "stories": [
+        "STORY-034"
+      ],
+      "depends_on": [
+        "STORY-005",
+        "STORY-006",
+        "STORY-007",
+        "STORY-008",
+        "STORY-009"
+      ],
+      "title": "EPIC-007: Unit Tests - Domain Logic & Use Cases"
+    },
+    {
+      "pack_id": "PACK-035",
+      "stories": [
+        "STORY-035"
+      ],
+      "depends_on": [
+        "STORY-002",
+        "STORY-010",
+        "STORY-011",
+        "STORY-012"
+      ],
+      "title": "EPIC-007: Integration Tests - Database & LLM Providers"
+    },
+    {
+      "pack_id": "PACK-036",
+      "stories": [
+        "STORY-036"
+      ],
+      "depends_on": [
+        "STORY-014",
+        "STORY-015",
+        "STORY-016",
+        "STORY-017",
+        "STORY-018",
+        "STORY-019",
+        "STORY-020",
+        "STORY-021"
+      ],
+      "title": "EPIC-007: E2E Tests - API Endpoints with TestClient"
+    },
+    {
+      "pack_id": "PACK-037",
+      "stories": [
+        "STORY-037"
+      ],
+      "depends_on": [
+        "STORY-030"
+      ],
+      "title": "EPIC-008: Deployment Workflow - Blue-Green Strategy"
+    },
+    {
+      "pack_id": "PACK-038",
+      "stories": [
+        "STORY-038"
+      ],
+      "depends_on": [
+        "STORY-001",
+        "STORY-037"
+      ],
+      "title": "EPIC-008: Database Migration Strategy - Online Migrations"
+    },
+    {
+      "pack_id": "PACK-039",
+      "stories": [
+        "STORY-039"
+      ],
+      "depends_on": [
+        "STORY-037",
+        "STORY-038"
+      ],
+      "title": "EPIC-008: Release Checklist & Runbook"
+    },
+    {
+      "pack_id": "PACK-040",
+      "stories": [
+        "STORY-040"
+      ],
+      "depends_on": [],
+      "title": "EPIC-009: DTOs - Request/Response Models"
+    },
+    {
+      "pack_id": "PACK-041",
+      "stories": [
+        "STORY-041"
+      ],
+      "depends_on": [],
+      "title": "EPIC-009: Custom Exception Hierarchy"
+    },
+    {
+      "pack_id": "PACK-042",
+      "stories": [
+        "STORY-042"
+      ],
+      "depends_on": [],
+      "title": "EPIC-009: Utilities - Token Counting, Retry, Date Helpers"
+    },
+    {
+      "pack_id": "PACK-043",
+      "stories": [
+        "STORY-043"
+      ],
+      "depends_on": [
+        "STORY-036"
+      ],
+      "title": "EPIC-010: User Journey Validation - Chat with LLM"
+    },
+    {
+      "pack_id": "PACK-044",
+      "stories": [
+        "STORY-044"
+      ],
+      "depends_on": [
+        "STORY-036"
+      ],
+      "title": "EPIC-010: User Journey Validation - Manage Dialogs"
+    },
+    {
+      "pack_id": "PACK-045",
+      "stories": [
+        "STORY-045"
+      ],
+      "depends_on": [
+        "STORY-036"
+      ],
+      "title": "EPIC-010: User Journey Validation - Check Token Balance"
+    },
+    {
+      "pack_id": "PACK-046",
+      "stories": [
+        "STORY-046"
+      ],
+      "depends_on": [
+        "STORY-036"
+      ],
+      "title": "EPIC-010: User Journey Validation - Admin Operations"
+    },
+    {
+      "pack_id": "PACK-047",
+      "stories": [
+        "STORY-047"
+      ],
+      "depends_on": [
+        "STORY-025",
+        "STORY-026"
+      ],
+      "title": "EPIC-010: System Events - Logging & Metrics Integration"
+    }
+  ]
+}

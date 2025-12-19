@@ -1,0 +1,44 @@
+{
+  "v": 1,
+  "pack_id": "PACK-012",
+  "title": "EPIC-003: LLM Provider Factory - Dynamic Selection",
+  "epic": {
+    "id": "EPIC-003",
+    "title": "External Integrations - LLM Providers & Auth",
+    "goal": "Integrate with OpenAI and Anthropic APIs for LLM chat, implement JWT validation for authentication"
+  },
+  "stories": [
+    "STORY-012"
+  ],
+  "story_type": "tech",
+  "related_nodes": [
+    1,
+    14,
+    26,
+    40,
+    56,
+    67,
+    71
+  ],
+  "depends_on": [
+    "STORY-010",
+    "STORY-011"
+  ],
+  "deliverables": [
+    "Production-ready implementation strictly for this story scope",
+    "Automated tests required by acceptance criteria",
+    "Minimal documentation/README updates required to run/test the change"
+  ],
+  "acceptance_criteria": [
+    "Factory selects adapter by provider name ('openai' or 'anthropic')",
+    "Both adapters implement common LLMProviderContract interface",
+    "Return 500 if provider unknown or adapter initialization fails",
+    "Unit tests verify correct adapter selected for each provider"
+  ],
+  "description": "Implement factory to select LLM provider adapter (OpenAI or Anthropic) based on model metadata (provider field). Enforce common interface for swappability.",
+  "constraints": {
+    "no_arch_changes": true,
+    "no_scope_creep": true,
+    "follow_graph": true
+  }
+}

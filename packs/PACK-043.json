@@ -1,0 +1,40 @@
+{
+  "v": 1,
+  "pack_id": "PACK-043",
+  "title": "EPIC-010: User Journey Validation - Chat with LLM",
+  "epic": {
+    "id": "EPIC-010",
+    "title": "User Journeys & System Events",
+    "goal": "Validate end-to-end user journeys (chat, manage dialogs, check balance, admin operations) and implement system events for observability and auditing"
+  },
+  "stories": [
+    "STORY-043"
+  ],
+  "story_type": "test",
+  "related_nodes": [
+    5,
+    62,
+    70
+  ],
+  "depends_on": [
+    "STORY-036"
+  ],
+  "deliverables": [
+    "Production-ready implementation strictly for this story scope",
+    "Automated tests required by acceptance criteria",
+    "Minimal documentation/README updates required to run/test the change"
+  ],
+  "acceptance_criteria": [
+    "Happy path: user authenticates (valid JWT), creates dialog (POST /dialogs), sends message (POST /dialogs/{id}/messages), receives streaming response (SSE), balance deducted",
+    "Validate: dialog created with correct settings, user message saved, assistant message saved with tokens, balance updated, events emitted (Message Sent, LLM Response Received, Tokens Deducted)",
+    "Error scenarios: insufficient tokens -> 402, LLM timeout -> 504, dialog not found -> 404, invalid JWT -> 401",
+    "Test with real PostgreSQL and mocked LLM provider",
+    "E2E test in CI"
+  ],
+  "description": "Validate end-to-end user journey: authenticate, create dialog, send message, receive streaming response, check token deduction. Test happy path and error scenarios (insufficient tokens, LLM timeout).",
+  "constraints": {
+    "no_arch_changes": true,
+    "no_scope_creep": true,
+    "follow_graph": true
+  }
+}

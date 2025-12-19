@@ -1,0 +1,54 @@
+{
+  "v": 1,
+  "pack_id": "PACK-020",
+  "title": "EPIC-004: Admin Endpoints - Manage Users & Tokens",
+  "epic": {
+    "id": "EPIC-004",
+    "title": "FastAPI Backend - API Layer & HTTP Routing",
+    "goal": "Build RESTful API with FastAPI: chat endpoint with SSE streaming, dialog management, token balance, admin operations, with JWT auth and request validation"
+  },
+  "stories": [
+    "STORY-020"
+  ],
+  "story_type": "feature",
+  "related_nodes": [
+    4,
+    23,
+    29,
+    33,
+    35,
+    43,
+    47,
+    50,
+    61,
+    63,
+    66,
+    71,
+    76
+  ],
+  "depends_on": [
+    "STORY-014",
+    "STORY-006"
+  ],
+  "deliverables": [
+    "Production-ready implementation strictly for this story scope",
+    "Automated tests required by acceptance criteria",
+    "Minimal documentation/README updates required to run/test the change"
+  ],
+  "acceptance_criteria": [
+    "GET /admin/users - list users with stats (dialog count, token usage), paginated",
+    "GET /admin/users/{id} - view user details (derived from activity, no separate user table)",
+    "PATCH /admin/users/{id}/limits - set token limit, emit Admin Action event",
+    "POST /admin/users/{id}/tokens - top-up tokens (amount can be negative), emit Admin Action event",
+    "GET /admin/users/{id}/tokens/history - view token transaction log, paginated, ordered by created_at desc",
+    "All endpoints require is_admin=true, return 403 if not admin",
+    "Return 400 if invalid limit/amount, 404 if user not found",
+    "Unit tests with mocked Token Controller and Data Access, integration tests verify admin enforcement"
+  ],
+  "description": "Implement admin-only endpoints: list users, view user details, set token limits, top-up tokens, view token transaction history. Enforce is_admin=true.",
+  "constraints": {
+    "no_arch_changes": true,
+    "no_scope_creep": true,
+    "follow_graph": true
+  }
+}

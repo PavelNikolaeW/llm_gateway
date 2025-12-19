@@ -1,0 +1,48 @@
+{
+  "v": 1,
+  "pack_id": "PACK-021",
+  "title": "EPIC-004: GET /admin/stats - Global Usage Statistics",
+  "epic": {
+    "id": "EPIC-004",
+    "title": "FastAPI Backend - API Layer & HTTP Routing",
+    "goal": "Build RESTful API with FastAPI: chat endpoint with SSE streaming, dialog management, token balance, admin operations, with JWT auth and request validation"
+  },
+  "stories": [
+    "STORY-021"
+  ],
+  "story_type": "feature",
+  "related_nodes": [
+    13,
+    23,
+    33,
+    38,
+    47,
+    50,
+    61,
+    71
+  ],
+  "depends_on": [
+    "STORY-014",
+    "STORY-020"
+  ],
+  "deliverables": [
+    "Production-ready implementation strictly for this story scope",
+    "Automated tests required by acceptance criteria",
+    "Minimal documentation/README updates required to run/test the change"
+  ],
+  "acceptance_criteria": [
+    "GET /admin/stats?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD",
+    "Require is_admin=true, return 403 if not admin",
+    "Query usage logs, dialogs, aggregate by model, user, time period",
+    "Return {total_tokens: int, active_users: int, top_models: [{model: string, usage: int}], avg_latency_ms: float}",
+    "Cache stats for 5 min (optional, document)",
+    "Return empty stats if no data",
+    "Unit tests with mocked Data Access, integration tests verify aggregation"
+  ],
+  "description": "Implement admin endpoint to view aggregated usage stats: total tokens used, active users, top models, average latency.",
+  "constraints": {
+    "no_arch_changes": true,
+    "no_scope_creep": true,
+    "follow_graph": true
+  }
+}

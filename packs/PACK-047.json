@@ -1,0 +1,46 @@
+{
+  "v": 1,
+  "pack_id": "PACK-047",
+  "title": "EPIC-010: System Events - Logging & Metrics Integration",
+  "epic": {
+    "id": "EPIC-010",
+    "title": "User Journeys & System Events",
+    "goal": "Validate end-to-end user journeys (chat, manage dialogs, check balance, admin operations) and implement system events for observability and auditing"
+  },
+  "stories": [
+    "STORY-047"
+  ],
+  "story_type": "feature",
+  "related_nodes": [
+    3,
+    5,
+    10,
+    21,
+    70,
+    73,
+    76
+  ],
+  "depends_on": [
+    "STORY-025",
+    "STORY-026"
+  ],
+  "deliverables": [
+    "Production-ready implementation strictly for this story scope",
+    "Automated tests required by acceptance criteria",
+    "Minimal documentation/README updates required to run/test the change"
+  ],
+  "acceptance_criteria": [
+    "Events defined: Message Sent (dialog_id, user_id, message_id, content_length, timestamp), LLM Response Received (dialog_id, user_id, message_id, model, tokens, latency_ms, timestamp), Tokens Deducted (user_id, amount, new_balance, reason, dialog_id, message_id, timestamp), Balance Exhausted (user_id, requested_cost, current_balance, timestamp), Admin Action (admin_user_id, target_user_id, action, amount, timestamp)",
+    "Events logged with structured context (JSON logs)",
+    "Metrics emitted: token_usage_total (counter, labels: model, reason), llm_requests_total (counter, labels: model, status), balance_exhausted_total (counter)",
+    "Events emitted after DB commit (at-least-once guarantee)",
+    "Future: publish to event bus (document for v2, no implementation in v1)",
+    "Integration tests verify events logged and metrics incremented"
+  ],
+  "description": "Implement system events (Message Sent, LLM Response Received, Tokens Deducted, Balance Exhausted, Admin Action) with structured logging and metrics emission for observability and auditing.",
+  "constraints": {
+    "no_arch_changes": true,
+    "no_scope_creep": true,
+    "follow_graph": true
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "v": 1,
+  "pack_id": "PACK-039",
+  "title": "EPIC-008: Release Checklist & Runbook",
+  "epic": {
+    "id": "EPIC-008",
+    "title": "Deployment & Release Management",
+    "goal": "Define deployment workflow, rollback strategy, zero-downtime deployment, release checklist, runbooks for production operations"
+  },
+  "stories": [
+    "STORY-039"
+  ],
+  "story_type": "doc",
+  "related_nodes": [
+    18
+  ],
+  "depends_on": [
+    "STORY-037",
+    "STORY-038"
+  ],
+  "deliverables": [
+    "Production-ready implementation strictly for this story scope",
+    "Automated tests required by acceptance criteria",
+    "Minimal documentation/README updates required to run/test the change"
+  ],
+  "acceptance_criteria": [
+    "Release checklist: version tag created, changelog updated, tests passing, migrations reviewed, secrets rotated (if needed)",
+    "Deployment runbook: step-by-step commands (kubectl apply, helm upgrade, etc.), health check validation, traffic switch",
+    "Rollback runbook: revert deployment (blue-green switch), revert migration (Alembic downgrade), validate rollback",
+    "Post-deployment validation: check /health, /metrics, logs for errors, smoke test (create dialog, send message)",
+    "Incident response: on-call rotation, alert escalation, debugging steps (check logs, metrics, DB queries)",
+    "Document in repo (docs/runbook.md), accessible to all engineers"
+  ],
+  "description": "Create release checklist and operational runbook: pre-deployment checks, deployment steps, post-deployment validation, rollback procedure, incident response.",
+  "constraints": {
+    "no_arch_changes": true,
+    "no_scope_creep": true,
+    "follow_graph": true
+  }
+}

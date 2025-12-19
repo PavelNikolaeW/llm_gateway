@@ -1,0 +1,39 @@
+{
+  "v": 1,
+  "pack_id": "PACK-041",
+  "title": "EPIC-009: Custom Exception Hierarchy",
+  "epic": {
+    "id": "EPIC-009",
+    "title": "Shared Utilities & DTOs",
+    "goal": "Implement shared code: Pydantic DTOs for API contracts, custom exception hierarchy, common utilities (date formatting, token counting, retry decorators)"
+  },
+  "stories": [
+    "STORY-041"
+  ],
+  "story_type": "tech",
+  "related_nodes": [
+    22,
+    58,
+    60,
+    64
+  ],
+  "depends_on": [],
+  "deliverables": [
+    "Production-ready implementation strictly for this story scope",
+    "Automated tests required by acceptance criteria",
+    "Minimal documentation/README updates required to run/test the change"
+  ],
+  "acceptance_criteria": [
+    "Base exception: DomainException (attributes: code, message, details)",
+    "Domain exceptions: InsufficientTokensError (402), DialogNotFoundError (404), DialogForbiddenError (403), ValidationError (422), LLMProviderError (500/504)",
+    "Exception messages exclude sensitive data (no user content, tokens)",
+    "Error handlers map exceptions to HTTP status codes and structured responses",
+    "Unit tests verify exception raising and handling"
+  ],
+  "description": "Define base exception class and domain-specific exceptions (InsufficientTokensError, DialogNotFoundError, LLMProviderError, etc.), map to HTTP status codes.",
+  "constraints": {
+    "no_arch_changes": true,
+    "no_scope_creep": true,
+    "follow_graph": true
+  }
+}

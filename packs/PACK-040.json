@@ -1,0 +1,40 @@
+{
+  "v": 1,
+  "pack_id": "PACK-040",
+  "title": "EPIC-009: DTOs - Request/Response Models",
+  "epic": {
+    "id": "EPIC-009",
+    "title": "Shared Utilities & DTOs",
+    "goal": "Implement shared code: Pydantic DTOs for API contracts, custom exception hierarchy, common utilities (date formatting, token counting, retry decorators)"
+  },
+  "stories": [
+    "STORY-040"
+  ],
+  "story_type": "tech",
+  "related_nodes": [
+    22,
+    58,
+    60,
+    64
+  ],
+  "depends_on": [],
+  "deliverables": [
+    "Production-ready implementation strictly for this story scope",
+    "Automated tests required by acceptance criteria",
+    "Minimal documentation/README updates required to run/test the change"
+  ],
+  "acceptance_criteria": [
+    "Request DTOs: CreateDialogRequest, ChatRequest, AdminTopUpRequest, SetLimitRequest",
+    "Response DTOs: DialogResponse, MessageResponse, TokenBalanceResponse, UserStatsResponse, AdminStatsResponse",
+    "Exclude internal fields from responses (e.g., hashed secrets, internal IDs)",
+    "Pydantic V2 for performance",
+    "Conversion helpers: ORM entity -> response DTO",
+    "Unit tests verify serialization/deserialization"
+  ],
+  "description": "Define Pydantic models for all API requests and responses, separate from ORM models, implement serialization helpers.",
+  "constraints": {
+    "no_arch_changes": true,
+    "no_scope_creep": true,
+    "follow_graph": true
+  }
+}

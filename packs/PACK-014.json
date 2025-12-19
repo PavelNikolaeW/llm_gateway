@@ -1,0 +1,46 @@
+{
+  "v": 1,
+  "pack_id": "PACK-014",
+  "title": "EPIC-004: API Layer - FastAPI App Setup & Middleware",
+  "epic": {
+    "id": "EPIC-004",
+    "title": "FastAPI Backend - API Layer & HTTP Routing",
+    "goal": "Build RESTful API with FastAPI: chat endpoint with SSE streaming, dialog management, token balance, admin operations, with JWT auth and request validation"
+  },
+  "stories": [
+    "STORY-014"
+  ],
+  "story_type": "tech",
+  "related_nodes": [
+    23,
+    33,
+    47,
+    50,
+    61,
+    71
+  ],
+  "depends_on": [
+    "STORY-013"
+  ],
+  "deliverables": [
+    "Production-ready implementation strictly for this story scope",
+    "Automated tests required by acceptance criteria",
+    "Minimal documentation/README updates required to run/test the change"
+  ],
+  "acceptance_criteria": [
+    "FastAPI app initialized with uvicorn server",
+    "JWT auth middleware: extract token from Authorization header, validate via JWT Validator, inject user_id and is_admin into request context",
+    "Pydantic models for request/response validation",
+    "Global exception handlers: map domain exceptions to HTTP status codes (InsufficientTokensError -> 402, DialogNotFoundError -> 404, etc.)",
+    "CORS configured (allow origins from env var CORS_ORIGINS)",
+    "Structured logging (JSON) with request_id, user_id, endpoint",
+    "Health check endpoint GET /health (returns 200 OK)",
+    "Unit tests with TestClient (FastAPI), integration tests verify middleware chain"
+  ],
+  "description": "Set up FastAPI application with JWT auth middleware, request validation, error handlers, CORS, and structured logging.",
+  "constraints": {
+    "no_arch_changes": true,
+    "no_scope_creep": true,
+    "follow_graph": true
+  }
+}

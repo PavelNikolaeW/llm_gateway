@@ -1,0 +1,41 @@
+{
+  "v": 1,
+  "pack_id": "PACK-038",
+  "title": "EPIC-008: Database Migration Strategy - Online Migrations",
+  "epic": {
+    "id": "EPIC-008",
+    "title": "Deployment & Release Management",
+    "goal": "Define deployment workflow, rollback strategy, zero-downtime deployment, release checklist, runbooks for production operations"
+  },
+  "stories": [
+    "STORY-038"
+  ],
+  "story_type": "infra",
+  "related_nodes": [
+    18,
+    54
+  ],
+  "depends_on": [
+    "STORY-001",
+    "STORY-037"
+  ],
+  "deliverables": [
+    "Production-ready implementation strictly for this story scope",
+    "Automated tests required by acceptance criteria",
+    "Minimal documentation/README updates required to run/test the change"
+  ],
+  "acceptance_criteria": [
+    "Migration workflow: add new column -> deploy code using new column -> backfill old data -> deploy code removing old column -> drop old column",
+    "Alembic migrations tested in staging before prod",
+    "Backward-compatible migrations: old code can run on new schema during rollout",
+    "Document migration steps in release notes",
+    "Backup DB before production migration",
+    "Rollback plan: revert migration with Alembic downgrade (test in staging)"
+  ],
+  "description": "Define migration strategy for zero-downtime deployments: additive changes first, backfill data, remove old columns in follow-up release.",
+  "constraints": {
+    "no_arch_changes": true,
+    "no_scope_creep": true,
+    "follow_graph": true
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "v": 1,
+  "pack_id": "PACK-015",
+  "title": "EPIC-004: POST /dialogs - Create Dialog",
+  "epic": {
+    "id": "EPIC-004",
+    "title": "FastAPI Backend - API Layer & HTTP Routing",
+    "goal": "Build RESTful API with FastAPI: chat endpoint with SSE streaming, dialog management, token balance, admin operations, with JWT auth and request validation"
+  },
+  "stories": [
+    "STORY-015"
+  ],
+  "story_type": "feature",
+  "related_nodes": [
+    19,
+    23,
+    33,
+    47,
+    50,
+    52,
+    61,
+    71
+  ],
+  "depends_on": [
+    "STORY-014",
+    "STORY-005"
+  ],
+  "deliverables": [
+    "Production-ready implementation strictly for this story scope",
+    "Automated tests required by acceptance criteria",
+    "Minimal documentation/README updates required to run/test the change"
+  ],
+  "acceptance_criteria": [
+    "POST /dialogs with body: {title?, system_prompt?, model_name?, agent_config?}",
+    "Extract user_id from JWT claims",
+    "Call Dialog Manager to create dialog",
+    "Return 201 Created with dialog entity (id, user_id, settings, created_at)",
+    "Return 400 if invalid model_name or agent_config",
+    "Return 401 if JWT invalid",
+    "Unit tests with mocked Dialog Manager, integration tests with DB"
+  ],
+  "description": "Implement endpoint to create dialog with optional settings (title, system_prompt, model_name, agent_config). Enforce user authentication.",
+  "constraints": {
+    "no_arch_changes": true,
+    "no_scope_creep": true,
+    "follow_graph": true
+  }
+}

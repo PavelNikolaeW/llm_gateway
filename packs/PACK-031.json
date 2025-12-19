@@ -1,0 +1,45 @@
+{
+  "v": 1,
+  "pack_id": "PACK-031",
+  "title": "EPIC-006: Centralized Logging - Loki/ELK Integration",
+  "epic": {
+    "id": "EPIC-006",
+    "title": "Infrastructure - Observability, CI/CD, Runtime, Secrets",
+    "goal": "Set up production infrastructure: containerization, Kubernetes/ECS deployment, CI/CD pipeline, centralized logging, metrics, alerting, secret management"
+  },
+  "stories": [
+    "STORY-031"
+  ],
+  "story_type": "infra",
+  "related_nodes": [
+    9,
+    16,
+    49,
+    55,
+    57,
+    59
+  ],
+  "depends_on": [
+    "STORY-025",
+    "STORY-030"
+  ],
+  "deliverables": [
+    "Production-ready implementation strictly for this story scope",
+    "Automated tests required by acceptance criteria",
+    "Minimal documentation/README updates required to run/test the change"
+  ],
+  "acceptance_criteria": [
+    "Fluent Bit or Promtail daemonset to collect logs from pods",
+    "Ship logs to Loki or Elasticsearch",
+    "Parse JSON logs, extract fields (request_id, user_id, endpoint, latency_ms)",
+    "Grafana/Kibana dashboard: error rate by endpoint, LLM latency p95, token usage by user/model",
+    "Alerts: error rate >1% sustained 5 min, LLM latency p95 >5s",
+    "Retention policy: 30 days (configurable)"
+  ],
+  "description": "Set up centralized logging: collect JSON logs from pods, ship to Loki/ELK, create dashboards for errors, latency, token usage.",
+  "constraints": {
+    "no_arch_changes": true,
+    "no_scope_creep": true,
+    "follow_graph": true
+  }
+}

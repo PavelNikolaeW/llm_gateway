@@ -1,0 +1,47 @@
+{
+  "v": 1,
+  "pack_id": "PACK-017",
+  "title": "EPIC-004: GET /dialogs/{id} - Retrieve Dialog",
+  "epic": {
+    "id": "EPIC-004",
+    "title": "FastAPI Backend - API Layer & HTTP Routing",
+    "goal": "Build RESTful API with FastAPI: chat endpoint with SSE streaming, dialog management, token balance, admin operations, with JWT auth and request validation"
+  },
+  "stories": [
+    "STORY-017"
+  ],
+  "story_type": "feature",
+  "related_nodes": [
+    8,
+    23,
+    33,
+    47,
+    50,
+    52,
+    61,
+    71
+  ],
+  "depends_on": [
+    "STORY-014",
+    "STORY-005"
+  ],
+  "deliverables": [
+    "Production-ready implementation strictly for this story scope",
+    "Automated tests required by acceptance criteria",
+    "Minimal documentation/README updates required to run/test the change"
+  ],
+  "acceptance_criteria": [
+    "GET /dialogs/{id}",
+    "Extract user_id, is_admin from JWT claims",
+    "Call Dialog Manager to retrieve dialog, verify ownership (user_id match or is_admin=true)",
+    "Return 200 OK with dialog entity",
+    "Return 404 if dialog not found, 403 if not owned and not admin, 401 if JWT invalid",
+    "Unit tests with mocked Dialog Manager, integration tests cover ownership checks"
+  ],
+  "description": "Implement endpoint to retrieve dialog by ID, verify ownership or admin access.",
+  "constraints": {
+    "no_arch_changes": true,
+    "no_scope_creep": true,
+    "follow_graph": true
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "v": 1,
+  "pack_id": "PACK-009",
+  "title": "EPIC-002: Message Handler - Streaming, Saving, Token Deduction",
+  "epic": {
+    "id": "EPIC-002",
+    "title": "Core Domain Logic & Business Rules",
+    "goal": "Implement dialog management, message handling, token accounting, model selection, and agent configuration with enforcement of business rules"
+  },
+  "stories": [
+    "STORY-009"
+  ],
+  "story_type": "feature",
+  "related_nodes": [
+    2,
+    10,
+    11,
+    15,
+    21,
+    25,
+    32,
+    33,
+    44,
+    46,
+    51,
+    52,
+    65,
+    73,
+    77
+  ],
+  "depends_on": [
+    "STORY-005",
+    "STORY-006",
+    "STORY-007",
+    "STORY-008"
+  ],
+  "deliverables": [
+    "Production-ready implementation strictly for this story scope",
+    "Automated tests required by acceptance criteria",
+    "Minimal documentation/README updates required to run/test the change"
+  ],
+  "acceptance_criteria": [
+    "Append user message to dialog (Data Access)",
+    "Emit Message Sent event (dialog_id, user_id, message_id, content_length, timestamp)",
+    "Call LLM provider via Integrations component (streaming or non-streaming)",
+    "Stream assistant response chunks to API Layer",
+    "Save assistant message with prompt_tokens, completion_tokens",
+    "Deduct tokens via Token Controller after successful response",
+    "Emit LLM Response Received event (dialog_id, user_id, message_id, model, tokens, latency_ms, timestamp)",
+    "Emit Tokens Deducted event",
+    "Transaction wraps save messages + deduct tokens (atomic)",
+    "Return 404 if dialog not found, 402 if insufficient tokens, 504 if LLM timeout, 500 if LLM error",
+    "No tokens deducted on LLM failure",
+    "Unit tests with mocked Integrations and Data Access, integration tests with testcontainers"
+  ],
+  "description": "Implement message handling: append user message to dialog, call LLM (via Integrations), stream assistant response, save messages, deduct tokens, emit events.",
+  "constraints": {
+    "no_arch_changes": true,
+    "no_scope_creep": true,
+    "follow_graph": true
+  }
+}

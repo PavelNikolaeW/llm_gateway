@@ -1,0 +1,42 @@
+{
+  "v": 1,
+  "pack_id": "PACK-046",
+  "title": "EPIC-010: User Journey Validation - Admin Operations",
+  "epic": {
+    "id": "EPIC-010",
+    "title": "User Journeys & System Events",
+    "goal": "Validate end-to-end user journeys (chat, manage dialogs, check balance, admin operations) and implement system events for observability and auditing"
+  },
+  "stories": [
+    "STORY-046"
+  ],
+  "story_type": "test",
+  "related_nodes": [
+    5,
+    13,
+    35,
+    63,
+    70
+  ],
+  "depends_on": [
+    "STORY-036"
+  ],
+  "deliverables": [
+    "Production-ready implementation strictly for this story scope",
+    "Automated tests required by acceptance criteria",
+    "Minimal documentation/README updates required to run/test the change"
+  ],
+  "acceptance_criteria": [
+    "Happy path: admin lists users with stats, sets token limit for user, tops up tokens (positive and negative amounts), views global stats",
+    "Validate: limit updated, balance updated, Admin Action events emitted, stats reflect current data",
+    "Error scenarios: non-admin user tries admin endpoints -> 403, invalid limit/amount -> 400",
+    "Test with real PostgreSQL, mocked LLM provider for stats",
+    "E2E test in CI"
+  ],
+  "description": "Validate end-to-end admin journeys: list users, set token limits, top-up tokens, view stats. Test admin enforcement (is_admin=true).",
+  "constraints": {
+    "no_arch_changes": true,
+    "no_scope_creep": true,
+    "follow_graph": true
+  }
+}

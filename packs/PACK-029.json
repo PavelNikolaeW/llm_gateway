@@ -1,0 +1,46 @@
+{
+  "v": 1,
+  "pack_id": "PACK-029",
+  "title": "EPIC-006: CI/CD Pipeline - GitHub Actions",
+  "epic": {
+    "id": "EPIC-006",
+    "title": "Infrastructure - Observability, CI/CD, Runtime, Secrets",
+    "goal": "Set up production infrastructure: containerization, Kubernetes/ECS deployment, CI/CD pipeline, centralized logging, metrics, alerting, secret management"
+  },
+  "stories": [
+    "STORY-029"
+  ],
+  "story_type": "infra",
+  "related_nodes": [
+    9,
+    16,
+    18,
+    49,
+    55,
+    57
+  ],
+  "depends_on": [
+    "STORY-028"
+  ],
+  "deliverables": [
+    "Production-ready implementation strictly for this story scope",
+    "Automated tests required by acceptance criteria",
+    "Minimal documentation/README updates required to run/test the change"
+  ],
+  "acceptance_criteria": [
+    "GitHub Actions workflow on push to main/release branch",
+    "Jobs: lint (ruff/black), test (pytest with coverage >80%), build (Docker image), deploy (staging on main, prod on release tag)",
+    "Secrets in GitHub vault: DOCKER_REGISTRY_TOKEN, DB_PASSWORD, OPENAI_API_KEY, etc.",
+    "Image scanning (Trivy or Snyk) for vulnerabilities",
+    "Parallel test execution (pytest -n auto)",
+    "Deploy job triggers on test success",
+    "Rollback on failed health check (optional for v1, document)",
+    "CI badge in README"
+  ],
+  "description": "Set up CI/CD pipeline with GitHub Actions: run tests, lint, build Docker image, push to registry, deploy to staging/prod.",
+  "constraints": {
+    "no_arch_changes": true,
+    "no_scope_creep": true,
+    "follow_graph": true
+  }
+}

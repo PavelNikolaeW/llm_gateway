@@ -1,0 +1,50 @@
+{
+  "v": 1,
+  "pack_id": "PACK-003",
+  "title": "EPIC-001: Redis Cache for Token Limits & Metadata",
+  "epic": {
+    "id": "EPIC-001",
+    "title": "Data Platform Foundation",
+    "goal": "Establish persistent storage, schema, migrations, and core data access layer to support all backend operations"
+  },
+  "stories": [
+    "STORY-003"
+  ],
+  "story_type": "infra",
+  "related_nodes": [
+    20,
+    24,
+    28,
+    31,
+    34,
+    41,
+    48,
+    54,
+    72,
+    74,
+    75
+  ],
+  "depends_on": [
+    "STORY-002"
+  ],
+  "deliverables": [
+    "Production-ready implementation strictly for this story scope",
+    "Automated tests required by acceptance criteria",
+    "Minimal documentation/README updates required to run/test the change"
+  ],
+  "acceptance_criteria": [
+    "Redis connection with async client (aioredis/redis-py)",
+    "Cache keys designed: user:{user_id}:balance, model:{name}, jwks:keys",
+    "TTL configured: balance (5 min), models (1 hour), JWKS (1 hour)",
+    "Cache miss fallback to database",
+    "Cache invalidation on balance update",
+    "Graceful degradation if Redis unavailable (log warning, use DB)",
+    "Integration tests with Redis testcontainer"
+  ],
+  "description": "Set up optional Redis cache for user token limits, model metadata, and JWT public keys (JWKS). Implement fallback to database on cache miss.",
+  "constraints": {
+    "no_arch_changes": true,
+    "no_scope_creep": true,
+    "follow_graph": true
+  }
+}

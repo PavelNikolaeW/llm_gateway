@@ -1,0 +1,40 @@
+{
+  "v": 1,
+  "pack_id": "PACK-037",
+  "title": "EPIC-008: Deployment Workflow - Blue-Green Strategy",
+  "epic": {
+    "id": "EPIC-008",
+    "title": "Deployment & Release Management",
+    "goal": "Define deployment workflow, rollback strategy, zero-downtime deployment, release checklist, runbooks for production operations"
+  },
+  "stories": [
+    "STORY-037"
+  ],
+  "story_type": "infra",
+  "related_nodes": [
+    18,
+    57
+  ],
+  "depends_on": [
+    "STORY-030"
+  ],
+  "deliverables": [
+    "Production-ready implementation strictly for this story scope",
+    "Automated tests required by acceptance criteria",
+    "Minimal documentation/README updates required to run/test the change"
+  ],
+  "acceptance_criteria": [
+    "Blue-green deployment manifest: create new deployment (green) with updated image, keep old (blue) running",
+    "Health checks: readiness probe waits for DB connection, liveness probe ensures pods healthy",
+    "Traffic switch: update Service selector to route to green deployment after all pods ready",
+    "Rollback: automated on failed health checks (rollback to blue), manual trigger via kubectl or CI job",
+    "Zero-downtime: verified in staging (no 5xx errors during deployment)",
+    "Document rollback procedure in runbook"
+  ],
+  "description": "Implement blue-green deployment strategy in Kubernetes: deploy new version alongside old, run health checks, switch traffic, rollback on failure.",
+  "constraints": {
+    "no_arch_changes": true,
+    "no_scope_creep": true,
+    "follow_graph": true
+  }
+}

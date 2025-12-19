@@ -1,0 +1,48 @@
+{
+  "v": 1,
+  "pack_id": "PACK-016",
+  "title": "EPIC-004: GET /dialogs - List User Dialogs",
+  "epic": {
+    "id": "EPIC-004",
+    "title": "FastAPI Backend - API Layer & HTTP Routing",
+    "goal": "Build RESTful API with FastAPI: chat endpoint with SSE streaming, dialog management, token balance, admin operations, with JWT auth and request validation"
+  },
+  "stories": [
+    "STORY-016"
+  ],
+  "story_type": "feature",
+  "related_nodes": [
+    23,
+    33,
+    45,
+    47,
+    50,
+    52,
+    61,
+    71
+  ],
+  "depends_on": [
+    "STORY-014",
+    "STORY-005"
+  ],
+  "deliverables": [
+    "Production-ready implementation strictly for this story scope",
+    "Automated tests required by acceptance criteria",
+    "Minimal documentation/README updates required to run/test the change"
+  ],
+  "acceptance_criteria": [
+    "GET /dialogs?page=1&page_size=20",
+    "Extract user_id from JWT claims",
+    "Call Dialog Manager to list dialogs for user_id",
+    "Return 200 OK with list of dialog entities and pagination metadata (total, page, page_size)",
+    "Default page_size=20, max=100",
+    "Return 401 if JWT invalid",
+    "Unit tests with mocked Dialog Manager, integration tests verify pagination"
+  ],
+  "description": "Implement endpoint to list user's dialogs with pagination, ordered by created_at desc.",
+  "constraints": {
+    "no_arch_changes": true,
+    "no_scope_creep": true,
+    "follow_graph": true
+  }
+}

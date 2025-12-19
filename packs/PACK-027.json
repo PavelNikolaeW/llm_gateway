@@ -1,0 +1,42 @@
+{
+  "v": 1,
+  "pack_id": "PACK-027",
+  "title": "EPIC-005: Configuration Management - Env Vars & Validation",
+  "epic": {
+    "id": "EPIC-005",
+    "title": "Cross-Cutting Concerns - Auth, Validation, Errors, Observability, Config",
+    "goal": "Implement production-ready concerns: JWT auth middleware, input validation, error handling, structured logging, metrics, configuration management"
+  },
+  "stories": [
+    "STORY-027"
+  ],
+  "story_type": "tech",
+  "related_nodes": [
+    6,
+    7,
+    9,
+    47,
+    59,
+    61,
+    71
+  ],
+  "depends_on": [],
+  "deliverables": [
+    "Production-ready implementation strictly for this story scope",
+    "Automated tests required by acceptance criteria",
+    "Minimal documentation/README updates required to run/test the change"
+  ],
+  "acceptance_criteria": [
+    "Pydantic BaseSettings class for config: DB_URL, REDIS_URL, JWT_SECRET, JWT_JWKS_URL, OPENAI_API_KEY, ANTHROPIC_API_KEY, CORS_ORIGINS, LOG_LEVEL, DEBUG",
+    "Required vars validated on startup (fail fast with clear error if missing)",
+    "Secrets masked in config repr (never log JWT_SECRET, API keys)",
+    "Config loaded once at startup, injected via FastAPI dependency",
+    "Unit tests verify validation, integration tests with test env vars"
+  ],
+  "description": "Load configuration from environment variables using Pydantic BaseSettings: DB_URL, JWT_SECRET, OPENAI_API_KEY, etc. Validate required vars on startup.",
+  "constraints": {
+    "no_arch_changes": true,
+    "no_scope_creep": true,
+    "follow_graph": true
+  }
+}

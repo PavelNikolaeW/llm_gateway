@@ -1,0 +1,43 @@
+{
+  "v": 1,
+  "pack_id": "PACK-028",
+  "title": "EPIC-006: Dockerfile - Multi-Stage Build",
+  "epic": {
+    "id": "EPIC-006",
+    "title": "Infrastructure - Observability, CI/CD, Runtime, Secrets",
+    "goal": "Set up production infrastructure: containerization, Kubernetes/ECS deployment, CI/CD pipeline, centralized logging, metrics, alerting, secret management"
+  },
+  "stories": [
+    "STORY-028"
+  ],
+  "story_type": "infra",
+  "related_nodes": [
+    9,
+    16,
+    49,
+    55,
+    57
+  ],
+  "depends_on": [],
+  "deliverables": [
+    "Production-ready implementation strictly for this story scope",
+    "Automated tests required by acceptance criteria",
+    "Minimal documentation/README updates required to run/test the change"
+  ],
+  "acceptance_criteria": [
+    "Multi-stage Dockerfile: builder stage (install deps, run tests), runtime stage (minimal image with uvicorn)",
+    "Base image: python:3.11-slim",
+    "Dependencies pinned in requirements.txt (pip freeze)",
+    "Layer caching optimized (COPY requirements.txt before COPY . to cache deps)",
+    "Runtime image includes only necessary files (src, migrations, config)",
+    "Non-root user for runtime security",
+    "Health check: CMD curl -f http://localhost:8000/health || exit 1",
+    "Build test in CI (docker build succeeds)"
+  ],
+  "description": "Create multi-stage Dockerfile: build dependencies, run tests, create minimal runtime image with pinned Python dependencies.",
+  "constraints": {
+    "no_arch_changes": true,
+    "no_scope_creep": true,
+    "follow_graph": true
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "v": 1,
+  "pack_id": "PACK-007",
+  "title": "EPIC-002: Model Registry - Load, Validate, Select",
+  "epic": {
+    "id": "EPIC-002",
+    "title": "Core Domain Logic & Business Rules",
+    "goal": "Implement dialog management, message handling, token accounting, model selection, and agent configuration with enforcement of business rules"
+  },
+  "stories": [
+    "STORY-007"
+  ],
+  "story_type": "feature",
+  "related_nodes": [
+    15,
+    25,
+    32,
+    33,
+    52,
+    65,
+    77
+  ],
+  "depends_on": [
+    "STORY-004"
+  ],
+  "deliverables": [
+    "Production-ready implementation strictly for this story scope",
+    "Automated tests required by acceptance criteria",
+    "Minimal documentation/README updates required to run/test the change"
+  ],
+  "acceptance_criteria": [
+    "Load models from DB into in-memory registry on startup",
+    "Reload registry on SIGHUP or config change (optional for v1, document)",
+    "Validate model name: return 400 if unknown or disabled",
+    "Calculate estimated cost from model pricing + input token count (tiktoken or approximation)",
+    "Provide model metadata: provider, cost, context_window",
+    "Unit tests with mocked DB, integration tests verify model loading"
+  ],
+  "description": "Implement model registry: load models from DB on startup, validate model name in requests, calculate estimated token cost, provide model metadata.",
+  "constraints": {
+    "no_arch_changes": true,
+    "no_scope_creep": true,
+    "follow_graph": true
+  }
+}

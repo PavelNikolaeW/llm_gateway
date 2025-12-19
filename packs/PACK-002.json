@@ -1,0 +1,50 @@
+{
+  "v": 1,
+  "pack_id": "PACK-002",
+  "title": "EPIC-001: Data Access Layer with AsyncPG ORM",
+  "epic": {
+    "id": "EPIC-001",
+    "title": "Data Platform Foundation",
+    "goal": "Establish persistent storage, schema, migrations, and core data access layer to support all backend operations"
+  },
+  "stories": [
+    "STORY-002"
+  ],
+  "story_type": "tech",
+  "related_nodes": [
+    20,
+    24,
+    28,
+    31,
+    34,
+    41,
+    48,
+    54,
+    72,
+    74,
+    75
+  ],
+  "depends_on": [
+    "STORY-001"
+  ],
+  "deliverables": [
+    "Production-ready implementation strictly for this story scope",
+    "Automated tests required by acceptance criteria",
+    "Minimal documentation/README updates required to run/test the change"
+  ],
+  "acceptance_criteria": [
+    "SQLAlchemy 2.0 async ORM configured with asyncpg driver",
+    "Connection pool configured (max 20 connections)",
+    "Repository pattern implemented for dialogs, messages, token_balances, token_transactions, models",
+    "Parameterized queries used (SQL injection protection)",
+    "Transaction support for atomic operations (save message + deduct tokens)",
+    "Unit tests with testcontainers for PostgreSQL",
+    "Integration tests cover CRUD operations and transactions"
+  ],
+  "description": "Implement async data access component using SQLAlchemy 2.0 async ORM with asyncpg driver. Provide repositories for dialogs, messages, token operations with connection pooling and transaction support.",
+  "constraints": {
+    "no_arch_changes": true,
+    "no_scope_creep": true,
+    "follow_graph": true
+  }
+}

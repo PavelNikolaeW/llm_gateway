@@ -1,0 +1,49 @@
+{
+  "v": 1,
+  "pack_id": "PACK-036",
+  "title": "EPIC-007: E2E Tests - API Endpoints with TestClient",
+  "epic": {
+    "id": "EPIC-007",
+    "title": "Testing Strategy - Unit, Integration, E2E",
+    "goal": "Implement comprehensive testing across layers: unit tests for domain logic, integration tests for DB/LLM, E2E tests for API endpoints, achieve >80% coverage"
+  },
+  "stories": [
+    "STORY-036"
+  ],
+  "story_type": "test",
+  "related_nodes": [
+    23,
+    39
+  ],
+  "depends_on": [
+    "STORY-014",
+    "STORY-015",
+    "STORY-016",
+    "STORY-017",
+    "STORY-018",
+    "STORY-019",
+    "STORY-020",
+    "STORY-021"
+  ],
+  "deliverables": [
+    "Production-ready implementation strictly for this story scope",
+    "Automated tests required by acceptance criteria",
+    "Minimal documentation/README updates required to run/test the change"
+  ],
+  "acceptance_criteria": [
+    "FastAPI TestClient configured with test DB and mocked LLM providers",
+    "Fixture data: test users (regular user, admin), dialogs, models",
+    "E2E tests for POST /dialogs, GET /dialogs, GET /dialogs/{id}, POST /dialogs/{id}/messages, GET /users/me/tokens",
+    "E2E tests for admin endpoints: GET /admin/users, PATCH /admin/users/{id}/limits, POST /admin/users/{id}/tokens, GET /admin/stats",
+    "Test scenarios: valid requests, invalid JWT, insufficient tokens, dialog ownership, admin-only access",
+    "Test streaming response (SSE) with async iteration",
+    "Factory pattern for test data (factory_boy or custom fixtures)",
+    "Run in CI on every PR"
+  ],
+  "description": "Write E2E tests for all API endpoints using FastAPI TestClient, cover user and admin scenarios, test auth, validation, error responses.",
+  "constraints": {
+    "no_arch_changes": true,
+    "no_scope_creep": true,
+    "follow_graph": true
+  }
+}

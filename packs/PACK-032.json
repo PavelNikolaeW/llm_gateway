@@ -1,0 +1,45 @@
+{
+  "v": 1,
+  "pack_id": "PACK-032",
+  "title": "EPIC-006: Metrics & Alerting - Prometheus & Grafana",
+  "epic": {
+    "id": "EPIC-006",
+    "title": "Infrastructure - Observability, CI/CD, Runtime, Secrets",
+    "goal": "Set up production infrastructure: containerization, Kubernetes/ECS deployment, CI/CD pipeline, centralized logging, metrics, alerting, secret management"
+  },
+  "stories": [
+    "STORY-032"
+  ],
+  "story_type": "infra",
+  "related_nodes": [
+    9,
+    16,
+    49,
+    55,
+    57,
+    59
+  ],
+  "depends_on": [
+    "STORY-026",
+    "STORY-030"
+  ],
+  "deliverables": [
+    "Production-ready implementation strictly for this story scope",
+    "Automated tests required by acceptance criteria",
+    "Minimal documentation/README updates required to run/test the change"
+  ],
+  "acceptance_criteria": [
+    "Prometheus deployed in K8s, scrape /metrics from all pods every 15s",
+    "ServiceMonitor (Prometheus Operator) configured",
+    "Grafana dashboards: requests/sec, error rate, LLM latency (p50/p95/p99), token usage rate, active dialogs, pod CPU/memory",
+    "Alerts: token_balance_exhausted_total >10 in 5 min, llm_error_rate >5% in 5 min, pod_cpu_usage >90% in 10 min",
+    "Alertmanager routes to Slack/PagerDuty (configure webhook)",
+    "Test alerts by triggering conditions in staging"
+  ],
+  "description": "Deploy Prometheus to scrape /metrics endpoint, create Grafana dashboards for system health, set up alerts for critical issues (token exhaustion, LLM errors, high latency).",
+  "constraints": {
+    "no_arch_changes": true,
+    "no_scope_creep": true,
+    "follow_graph": true
+  }
+}

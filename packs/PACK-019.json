@@ -1,0 +1,47 @@
+{
+  "v": 1,
+  "pack_id": "PACK-019",
+  "title": "EPIC-004: GET /users/me/tokens - Check Token Balance",
+  "epic": {
+    "id": "EPIC-004",
+    "title": "FastAPI Backend - API Layer & HTTP Routing",
+    "goal": "Build RESTful API with FastAPI: chat endpoint with SSE streaming, dialog management, token balance, admin operations, with JWT auth and request validation"
+  },
+  "stories": [
+    "STORY-019"
+  ],
+  "story_type": "feature",
+  "related_nodes": [
+    23,
+    33,
+    47,
+    50,
+    61,
+    65,
+    69,
+    71
+  ],
+  "depends_on": [
+    "STORY-014",
+    "STORY-006"
+  ],
+  "deliverables": [
+    "Production-ready implementation strictly for this story scope",
+    "Automated tests required by acceptance criteria",
+    "Minimal documentation/README updates required to run/test the change"
+  ],
+  "acceptance_criteria": [
+    "GET /users/me/tokens",
+    "Extract user_id from JWT claims",
+    "Call Token Controller to fetch balance, total_used, limit",
+    "Return 200 OK with {balance: int, total_used: int, limit: int | null}",
+    "Return 401 if JWT invalid",
+    "Unit tests with mocked Token Controller, integration tests verify balance calculation"
+  ],
+  "description": "Implement endpoint for user to view current token balance and usage stats.",
+  "constraints": {
+    "no_arch_changes": true,
+    "no_scope_creep": true,
+    "follow_graph": true
+  }
+}

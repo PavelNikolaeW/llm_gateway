@@ -1,0 +1,46 @@
+{
+  "v": 1,
+  "pack_id": "PACK-023",
+  "title": "EPIC-005: Request Validation - Pydantic Models & Business Rules",
+  "epic": {
+    "id": "EPIC-005",
+    "title": "Cross-Cutting Concerns - Auth, Validation, Errors, Observability, Config",
+    "goal": "Implement production-ready concerns: JWT auth middleware, input validation, error handling, structured logging, metrics, configuration management"
+  },
+  "stories": [
+    "STORY-023"
+  ],
+  "story_type": "tech",
+  "related_nodes": [
+    6,
+    7,
+    23,
+    47,
+    59,
+    61,
+    64,
+    71
+  ],
+  "depends_on": [
+    "STORY-014"
+  ],
+  "deliverables": [
+    "Production-ready implementation strictly for this story scope",
+    "Automated tests required by acceptance criteria",
+    "Minimal documentation/README updates required to run/test the change"
+  ],
+  "acceptance_criteria": [
+    "Pydantic models for CreateDialogRequest, ChatRequest, MessageResponse, TokenBalanceResponse, AdminTopUpRequest, etc.",
+    "FastAPI auto-validation on request body/query params",
+    "Custom validators: token balance >= cost, model enabled, agent config ranges (temperature 0-1, max_tokens > 0)",
+    "Return 422 Unprocessable Entity if schema mismatch, 400 Bad Request if business rule violation",
+    "Sanitize inputs: reject oversized payloads (max content length from config)",
+    "Unit tests cover validation success/failure, integration tests verify error responses"
+  ],
+  "description": "Define Pydantic models for all API requests/responses, implement custom validators for business rules (token balance >= cost, valid model, etc.).",
+  "constraints": {
+    "no_arch_changes": true,
+    "no_scope_creep": true,
+    "follow_graph": true
+  }
+}

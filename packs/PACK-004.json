@@ -1,0 +1,48 @@
+{
+  "v": 1,
+  "pack_id": "PACK-004",
+  "title": "EPIC-001: Seed Models Configuration",
+  "epic": {
+    "id": "EPIC-001",
+    "title": "Data Platform Foundation",
+    "goal": "Establish persistent storage, schema, migrations, and core data access layer to support all backend operations"
+  },
+  "stories": [
+    "STORY-004"
+  ],
+  "story_type": "infra",
+  "related_nodes": [
+    15,
+    20,
+    24,
+    28,
+    31,
+    34,
+    41,
+    48,
+    54,
+    72,
+    74,
+    75
+  ],
+  "depends_on": [
+    "STORY-001"
+  ],
+  "deliverables": [
+    "Production-ready implementation strictly for this story scope",
+    "Automated tests required by acceptance criteria",
+    "Minimal documentation/README updates required to run/test the change"
+  ],
+  "acceptance_criteria": [
+    "Seed migration adds models: gpt-4-turbo, gpt-3.5-turbo, claude-3-opus, claude-3-sonnet",
+    "Each model has: provider, cost_per_1k_prompt_tokens, cost_per_1k_completion_tokens, context_window, enabled=true",
+    "Model Registry component can load models from DB on startup",
+    "Admin can update model metadata via future API (out of scope for this story, note in docs)"
+  ],
+  "description": "Seed models table with initial LLM providers (OpenAI GPT-4, Anthropic Claude) including pricing and context window metadata.",
+  "constraints": {
+    "no_arch_changes": true,
+    "no_scope_creep": true,
+    "follow_graph": true
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "v": 1,
+  "pack_id": "PACK-018",
+  "title": "EPIC-004: POST /dialogs/{id}/messages - Chat with LLM (Streaming)",
+  "epic": {
+    "id": "EPIC-004",
+    "title": "FastAPI Backend - API Layer & HTTP Routing",
+    "goal": "Build RESTful API with FastAPI: chat endpoint with SSE streaming, dialog management, token balance, admin operations, with JWT auth and request validation"
+  },
+  "stories": [
+    "STORY-018"
+  ],
+  "story_type": "feature",
+  "related_nodes": [
+    2,
+    11,
+    23,
+    32,
+    33,
+    44,
+    46,
+    47,
+    50,
+    51,
+    53,
+    61,
+    71
+  ],
+  "depends_on": [
+    "STORY-014",
+    "STORY-009",
+    "STORY-012"
+  ],
+  "deliverables": [
+    "Production-ready implementation strictly for this story scope",
+    "Automated tests required by acceptance criteria",
+    "Minimal documentation/README updates required to run/test the change"
+  ],
+  "acceptance_criteria": [
+    "POST /dialogs/{id}/messages with body: {content: string}",
+    "Extract user_id from JWT claims",
+    "Validate request: dialog ownership, message schema",
+    "Check token balance via Token Controller (estimated cost)",
+    "Return 402 Payment Required if insufficient tokens",
+    "Call Message Handler to process message (append user message, call LLM, stream response)",
+    "Stream assistant response via Server-Sent Events (SSE): Content-Type: text/event-stream",
+    "Save user and assistant messages, deduct tokens after successful response",
+    "Emit events: Message Sent, LLM Response Received, Tokens Deducted",
+    "Return 404 if dialog not found, 403 if not owned, 504 if LLM timeout, 500 if LLM error",
+    "Unit tests with mocked Message Handler, integration tests with LLM mock and DB"
+  ],
+  "description": "Implement chat endpoint: accept user message, check token balance, call LLM via Message Handler, stream assistant response via SSE, save messages, deduct tokens.",
+  "constraints": {
+    "no_arch_changes": true,
+    "no_scope_creep": true,
+    "follow_graph": true
+  }
+}

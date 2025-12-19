@@ -1,0 +1,40 @@
+{
+  "v": 1,
+  "pack_id": "PACK-042",
+  "title": "EPIC-009: Utilities - Token Counting, Retry, Date Helpers",
+  "epic": {
+    "id": "EPIC-009",
+    "title": "Shared Utilities & DTOs",
+    "goal": "Implement shared code: Pydantic DTOs for API contracts, custom exception hierarchy, common utilities (date formatting, token counting, retry decorators)"
+  },
+  "stories": [
+    "STORY-042"
+  ],
+  "story_type": "tech",
+  "related_nodes": [
+    22,
+    58,
+    60,
+    64
+  ],
+  "depends_on": [],
+  "deliverables": [
+    "Production-ready implementation strictly for this story scope",
+    "Automated tests required by acceptance criteria",
+    "Minimal documentation/README updates required to run/test the change"
+  ],
+  "acceptance_criteria": [
+    "Token counting: estimate tokens from text (tiktoken for OpenAI models, approximation for Anthropic)",
+    "Retry decorator: async retry with exponential backoff, max retries, configurable exceptions",
+    "Date helpers: format ISO 8601, parse timestamps, timezone handling (UTC)",
+    "Async utilities: run_in_executor for blocking calls, timeout wrapper",
+    "Pure functions, no I/O (testable in isolation)",
+    "Unit tests cover edge cases (empty text, timeout, retry exhaustion)"
+  ],
+  "description": "Implement common utilities: token counting (tiktoken or approximation), retry decorators with exponential backoff, date formatting, async helpers.",
+  "constraints": {
+    "no_arch_changes": true,
+    "no_scope_creep": true,
+    "follow_graph": true
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "v": 1,
+  "pack_id": "PACK-033",
+  "title": "EPIC-006: Secret Management - K8s Secrets & Rotation",
+  "epic": {
+    "id": "EPIC-006",
+    "title": "Infrastructure - Observability, CI/CD, Runtime, Secrets",
+    "goal": "Set up production infrastructure: containerization, Kubernetes/ECS deployment, CI/CD pipeline, centralized logging, metrics, alerting, secret management"
+  },
+  "stories": [
+    "STORY-033"
+  ],
+  "story_type": "security",
+  "related_nodes": [
+    9,
+    16,
+    49,
+    55,
+    57
+  ],
+  "depends_on": [
+    "STORY-030"
+  ],
+  "deliverables": [
+    "Production-ready implementation strictly for this story scope",
+    "Automated tests required by acceptance criteria",
+    "Minimal documentation/README updates required to run/test the change"
+  ],
+  "acceptance_criteria": [
+    "Secrets stored in K8s Secret resource (encrypted in etcd)",
+    "Alternative: integrate with external vault (HashiCorp Vault, AWS Secrets Manager) for automatic rotation (document for future)",
+    "Secrets injected as env vars in pods (read-only)",
+    "Secrets never committed to repo (add to .gitignore, CI checks for leaked secrets)",
+    "Rotation policy documented: rotate JWT_SECRET, API keys quarterly or on breach",
+    "Audit logs for secret access (K8s RBAC audit)",
+    "Test secret injection in staging"
+  ],
+  "description": "Store secrets in Kubernetes Secrets (or external vault like HashiCorp Vault), inject as env vars, implement rotation policy, audit access.",
+  "constraints": {
+    "no_arch_changes": true,
+    "no_scope_creep": true,
+    "follow_graph": true
+  }
+}

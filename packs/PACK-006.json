@@ -1,0 +1,52 @@
+{
+  "v": 1,
+  "pack_id": "PACK-006",
+  "title": "EPIC-002: Token Controller - Balance Check, Deduction, Top-Up",
+  "epic": {
+    "id": "EPIC-002",
+    "title": "Core Domain Logic & Business Rules",
+    "goal": "Implement dialog management, message handling, token accounting, model selection, and agent configuration with enforcement of business rules"
+  },
+  "stories": [
+    "STORY-006"
+  ],
+  "story_type": "feature",
+  "related_nodes": [
+    3,
+    10,
+    15,
+    25,
+    32,
+    33,
+    43,
+    46,
+    52,
+    65,
+    77
+  ],
+  "depends_on": [
+    "STORY-002",
+    "STORY-003"
+  ],
+  "deliverables": [
+    "Production-ready implementation strictly for this story scope",
+    "Automated tests required by acceptance criteria",
+    "Minimal documentation/README updates required to run/test the change"
+  ],
+  "acceptance_criteria": [
+    "Check balance: return true if balance >= estimated_cost, else false",
+    "Deduct tokens: atomic DB update, log transaction with reason='llm_usage', dialog_id, message_id",
+    "Top-up tokens: admin-only, support negative amounts, log transaction with reason='admin_top_up' or 'admin_deduct', admin_user_id",
+    "Emit events: Tokens Deducted (user_id, amount, new_balance, reason, dialog_id, message_id, timestamp)",
+    "Emit Balance Exhausted event if balance < 0 after deduction or on check failure",
+    "Cache balance (invalidate on update) if Redis available",
+    "Race condition handled via DB transaction isolation (serializable or optimistic locking)",
+    "Unit tests cover insufficient balance, double deduction prevention, admin operations"
+  ],
+  "description": "Implement token accounting: check balance against estimated cost, deduct tokens after LLM response, admin top-up, enforce per-user limits, emit events.",
+  "constraints": {
+    "no_arch_changes": true,
+    "no_scope_creep": true,
+    "follow_graph": true
+  }
+}
