@@ -220,3 +220,50 @@ class LLMResponseEvent(BaseModel):
     completion_tokens: int
     latency_ms: int
     timestamp: datetime
+
+
+# Admin Schemas
+
+
+class UserStatsResponse(BaseModel):
+    """Schema for user stats in admin list."""
+
+    user_id: int
+    dialog_count: int
+    total_tokens_used: int
+    balance: int
+    limit: int | None = None
+
+
+class UserDetailsResponse(BaseModel):
+    """Schema for detailed user info in admin view."""
+
+    user_id: int
+    dialog_count: int
+    total_tokens_used: int
+    balance: int
+    limit: int | None = None
+    last_activity: datetime | None = None
+
+
+class SetLimitRequest(BaseModel):
+    """Schema for setting user token limit."""
+
+    limit: int | None = Field(None, ge=0, description="Token limit (null = unlimited)")
+
+
+class TopUpTokensRequest(BaseModel):
+    """Schema for admin token top-up/deduct."""
+
+    amount: int = Field(..., description="Amount of tokens (positive = add, negative = deduct)")
+
+
+class AdminActionEvent(BaseModel):
+    """Event emitted for admin actions."""
+
+    event_type: str
+    admin_user_id: int
+    target_user_id: int
+    action: str
+    details: dict[str, Any]
+    timestamp: datetime

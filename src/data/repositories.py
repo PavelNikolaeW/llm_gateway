@@ -29,6 +29,20 @@ class DialogRepository(BaseRepository[Dialog]):
         )
         return list(result.scalars().all())
 
+    async def count_by_user(self, session: AsyncSession, user_id: int) -> int:
+        """Count dialogs for a user."""
+        result = await session.execute(
+            select(func.count(Dialog.id)).where(Dialog.user_id == user_id)
+        )
+        return int(result.scalar() or 0)
+
+    async def get_last_activity(self, session: AsyncSession, user_id: int) -> datetime | None:
+        """Get last activity time for a user (most recent dialog update)."""
+        result = await session.execute(
+            select(func.max(Dialog.updated_at)).where(Dialog.user_id == user_id)
+        )
+        return result.scalar()
+
     async def get_by_id_and_user(
         self, session: AsyncSession, dialog_id: UUID, user_id: int
     ) -> Dialog | None:
@@ -172,6 +186,52 @@ class TokenBalanceRepository(BaseRepository[TokenBalance]):
         await cache_service.invalidate_balance(user_id)
 
         return balance
+
+    async def set_limit(
+        self, session: AsyncSession, user_id: int, limit: int | None
+    ) -> TokenBalance:
+        """Set token limit for user.
+
+        Args:
+            session: Database session
+            user_id: User to set limit for
+            limit: Token limit (None = unlimited)
+
+        Returns:
+            Updated balance record
+        """
+        balance = await self.get_or_create(session, user_id)
+        balance.limit = limit
+        balance.updated_at = datetime.utcnow()
+        await session.flush()
+        await session.refresh(balance)
+
+        # Invalidate cache after limit update
+        await cache_service.invalidate_balance(user_id)
+
+        return balance
+
+    async def list_all_users(
+        self, session: AsyncSession, skip: int = 0, limit: int = 20
+    ) -> list[TokenBalance]:
+        """List all users with token balances, paginated.
+
+        Returns users ordered by user_id.
+        """
+        result = await session.execute(
+            select(TokenBalance)
+            .order_by(TokenBalance.user_id)
+            .offset(skip)
+            .limit(limit)
+        )
+        return list(result.scalars().all())
+
+    async def count_all_users(self, session: AsyncSession) -> int:
+        """Count total users with token balances."""
+        result = await session.execute(
+            select(func.count(TokenBalance.user_id))
+        )
+        return int(result.scalar() or 0)
 
 
 class TokenTransactionRepository(BaseRepository[TokenTransaction]):

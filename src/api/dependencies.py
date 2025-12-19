@@ -11,6 +11,7 @@ from fastapi import Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.data.database import get_session_maker
+from src.domain.admin_service import AdminService
 from src.domain.dialog_service import DialogService
 from src.domain.message_service import MessageService
 from src.domain.model_registry import model_registry
@@ -107,7 +108,13 @@ def get_message_service() -> MessageService:
     return MessageService(token_service, llm_provider)
 
 
+def get_admin_service() -> AdminService:
+    """Get AdminService instance."""
+    return AdminService()
+
+
 # Type aliases for service dependencies
 DialogServiceDep = Annotated[DialogService, Depends(get_dialog_service)]
 TokenServiceDep = Annotated[TokenService, Depends(get_token_service)]
 MessageServiceDep = Annotated[MessageService, Depends(get_message_service)]
+AdminServiceDep = Annotated[AdminService, Depends(get_admin_service)]
