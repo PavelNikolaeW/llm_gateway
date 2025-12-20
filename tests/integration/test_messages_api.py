@@ -197,20 +197,6 @@ class TestMessagesResponseFormat:
         data = response.json()
         assert "request_id" in data
 
-    @pytest.mark.skip(reason="Async loop conflicts with TestClient and auth middleware")
-    def test_streaming_endpoint_content_type(self, mock_jwt_validator):
-        """Test streaming endpoint returns correct content type."""
-        pass
-
-
-class TestMessagesSyncEndpoint:
-    """Tests for the synchronous message endpoint."""
-
-    @pytest.mark.skip(reason="Async loop conflicts with TestClient and auth middleware")
-    def test_sync_message_accepts_json(self, mock_jwt_validator):
-        """Test sync message endpoint accepts JSON."""
-        pass
-
 
 class TestMessagesWithDatabase:
     """Integration tests that use the actual database."""

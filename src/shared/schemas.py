@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class DialogCreate(BaseModel):
@@ -27,8 +27,7 @@ class DialogResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class DialogList(BaseModel):
@@ -52,8 +51,7 @@ class TokenBalanceResponse(BaseModel):
     limit: int | None = None
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class TokenStatsResponse(BaseModel):
@@ -90,8 +88,7 @@ class TokenTransactionResponse(BaseModel):
     admin_user_id: int | None = None
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class TokenEvent(BaseModel):
@@ -120,8 +117,7 @@ class ModelMetadata(BaseModel):
     context_window: int
     enabled: bool
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CostEstimate(BaseModel):
@@ -192,8 +188,7 @@ class MessageResponse(BaseModel):
     completion_tokens: int | None = None
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class StreamChunk(BaseModel):

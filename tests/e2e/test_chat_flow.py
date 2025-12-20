@@ -94,6 +94,19 @@ def message_service(token_service: TokenService, mock_llm: MockLLMProvider):
 
 async def setup_user_balance(session: AsyncSession, user_id: int, balance: int = 10000) -> TokenBalance:
     """Helper to set up user balance for testing."""
+    from sqlalchemy import select
+
+    # Check if balance already exists
+    result = await session.execute(
+        select(TokenBalance).where(TokenBalance.user_id == user_id)
+    )
+    existing = result.scalar_one_or_none()
+
+    if existing:
+        existing.balance = balance
+        await session.flush()
+        return existing
+
     token_balance = TokenBalance(
         user_id=user_id,
         balance=balance,

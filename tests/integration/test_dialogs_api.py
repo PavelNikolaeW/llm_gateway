@@ -146,15 +146,6 @@ class TestDialogsRequestValidation:
 
         assert response.status_code == 422
 
-    @pytest.mark.skip(reason="Intermittent async loop conflicts in full test suite")
-    def test_list_dialogs_invalid_page_returns_422(self, mock_jwt_validator):
-        """Test listing dialogs with invalid page number."""
-        pass
-
-    @pytest.mark.skip(reason="Causes async loop conflicts in test setup")
-    def test_list_dialogs_negative_page_size(self, mock_jwt_validator):
-        """Test listing dialogs with negative page size."""
-        pass
 
 
 class TestDialogsResponseFormat:
@@ -183,11 +174,6 @@ class TestDialogsResponseFormat:
         data = response.json()
         assert "request_id" in data
         # Request ID is present (may be empty if context not set)
-
-    @pytest.mark.skip(reason="Causes async loop conflicts in test setup")
-    def test_error_response_structure(self, mock_jwt_validator):
-        """Test error responses have proper structure."""
-        pass
 
 
 class TestDialogsContentNegotiation:
