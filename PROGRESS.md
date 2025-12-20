@@ -1,9 +1,9 @@
 # Epic Progress Tracker
 
 ## Summary
-- **Completed**: 34/47
-- **Tests**: 447 passing
-- **Last Updated**: PACK-034
+- **Completed**: 36/47
+- **Tests**: 516 passing
+- **Last Updated**: PACK-036
 
 ## Completed
 
@@ -43,21 +43,21 @@
 | PACK-032 | E2E Tests - Chat Flow | Dialog creation, message flow, token deduction, history, 9 tests |
 | PACK-033 | E2E Tests - Token Lifecycle | Admin top-up, deduction, limits, transactions, stats, 12 tests |
 | PACK-034 | Load Testing Setup | Locust config, DialogUser/TokenUser/HealthCheckUser/AdminUser, 4 profiles |
+| PACK-035 | Integration Tests - DB & LLM | testcontainers, CRUD tests, transaction tests, LLM mocks, E2E message flow |
+| PACK-036 | E2E API Tests | FastAPI TestClient, JWT auth tests, dialog/admin endpoint auth, mocked deps |
 
 ## Pending
 
 | Pack | Title |
 |------|-------|
-| PACK-035 | Database Migrations |
-| PACK-036 | Docker Setup |
-| PACK-037 | CI/CD Pipeline |
-| PACK-038 | API Documentation |
-| PACK-039 | Rate Limiting |
-| PACK-040 | WebSocket Support |
-| PACK-041 | Batch Operations |
-| PACK-042 | Export/Import |
-| PACK-043 | Audit Logging |
-| PACK-044 | Multi-tenancy |
-| PACK-045 | Caching Strategy |
-| PACK-046 | Performance Optimization |
+| PACK-037 | Docker Setup |
+| PACK-038 | CI/CD Pipeline |
+| PACK-039 | API Documentation |
+| PACK-040 | Rate Limiting |
+| PACK-041 | WebSocket Support |
+| PACK-042 | Batch Operations |
+| PACK-043 | Export/Import |
+| PACK-044 | Audit Logging |
+| PACK-045 | Multi-tenancy |
+| PACK-046 | Caching Strategy |
 | PACK-047 | Production Readiness |

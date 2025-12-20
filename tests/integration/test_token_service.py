@@ -1,23 +1,29 @@
-"""Integration tests for TokenService with real database."""
+"""Integration tests for TokenService with test database tables.
+
+Uses test-specific tables (test_dialogs, test_token_balances, etc.)
+to ensure complete isolation from production data.
+NEVER touches tables starting with api_*.
+"""
 import uuid
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.data.models import Dialog, Message
-from src.domain.token_service import TokenService
 from src.shared.exceptions import ForbiddenError, InsufficientTokensError
+from tests.conftest import get_unique_user_id
+from tests.test_models import TestDialog, TestMessage
+from tests.test_services import TestTokenService
 
 
 @pytest.fixture(scope="function")
 def token_service():
-    """Create token service."""
-    return TokenService()
+    """Create test token service that uses test tables."""
+    return TestTokenService()
 
 
 async def create_dialog_and_message(session: AsyncSession, user_id: int) -> tuple[uuid.UUID, uuid.UUID]:
-    """Helper to create a dialog and message for testing."""
-    dialog = Dialog(
+    """Helper to create a test dialog and message."""
+    dialog = TestDialog(
         id=uuid.uuid4(),
         user_id=user_id,
         title="Test Dialog",
@@ -26,7 +32,7 @@ async def create_dialog_and_message(session: AsyncSession, user_id: int) -> tupl
     session.add(dialog)
     await session.flush()
 
-    message = Message(
+    message = TestMessage(
         id=uuid.uuid4(),
         dialog_id=dialog.id,
         role="assistant",
@@ -39,10 +45,9 @@ async def create_dialog_and_message(session: AsyncSession, user_id: int) -> tupl
 
 
 @pytest.mark.asyncio
-async def test_check_balance_new_user(session: AsyncSession, token_service: TokenService):
+async def test_check_balance_new_user(session: AsyncSession, token_service: TestTokenService):
     """Test check_balance creates balance for new user."""
-    # Use unique user_id to avoid conflicts
-    user_id = 200000 + abs(hash(str(uuid.uuid4()))) % 10000
+    user_id = get_unique_user_id()
 
     # New user should have 0 balance
     result = await token_service.check_balance(session, user_id=user_id, estimated_cost=100)
@@ -58,9 +63,9 @@ async def test_check_balance_new_user(session: AsyncSession, token_service: Toke
 
 
 @pytest.mark.asyncio
-async def test_admin_top_up_and_check_balance(session: AsyncSession, token_service: TokenService):
+async def test_admin_top_up_and_check_balance(session: AsyncSession, token_service: TestTokenService):
     """Test admin top-up followed by balance check."""
-    user_id = 200100 + abs(hash(str(uuid.uuid4()))) % 10000
+    user_id = get_unique_user_id()
     admin_id = 999
 
     # Admin tops up user
@@ -85,9 +90,9 @@ async def test_admin_top_up_and_check_balance(session: AsyncSession, token_servi
 
 
 @pytest.mark.asyncio
-async def test_deduct_tokens_integration(session: AsyncSession, token_service: TokenService):
+async def test_deduct_tokens_integration(session: AsyncSession, token_service: TestTokenService):
     """Test token deduction with real database."""
-    user_id = 200200 + abs(hash(str(uuid.uuid4()))) % 10000
+    user_id = get_unique_user_id()
     admin_id = 999
 
     # First, top up the user
@@ -116,9 +121,9 @@ async def test_deduct_tokens_integration(session: AsyncSession, token_service: T
 
 
 @pytest.mark.asyncio
-async def test_deduct_tokens_insufficient_balance(session: AsyncSession, token_service: TokenService):
+async def test_deduct_tokens_insufficient_balance(session: AsyncSession, token_service: TestTokenService):
     """Test deduction fails with insufficient balance."""
-    user_id = 200300 + abs(hash(str(uuid.uuid4()))) % 10000
+    user_id = get_unique_user_id()
     admin_id = 999
 
     # Top up with small amount
@@ -144,9 +149,9 @@ async def test_deduct_tokens_insufficient_balance(session: AsyncSession, token_s
 
 
 @pytest.mark.asyncio
-async def test_admin_deduct_negative_amount(session: AsyncSession, token_service: TokenService):
+async def test_admin_deduct_negative_amount(session: AsyncSession, token_service: TestTokenService):
     """Test admin can deduct tokens with negative amount."""
-    user_id = 200400 + abs(hash(str(uuid.uuid4()))) % 10000
+    user_id = get_unique_user_id()
     admin_id = 999
 
     # First top up
@@ -169,9 +174,9 @@ async def test_admin_deduct_negative_amount(session: AsyncSession, token_service
 
 
 @pytest.mark.asyncio
-async def test_admin_top_up_non_admin_forbidden(session: AsyncSession, token_service: TokenService):
+async def test_admin_top_up_non_admin_forbidden(session: AsyncSession, token_service: TestTokenService):
     """Test non-admin cannot perform top-up."""
-    user_id = 200500 + abs(hash(str(uuid.uuid4()))) % 10000
+    user_id = get_unique_user_id()
 
     with pytest.raises(ForbiddenError) as exc_info:
         await token_service.admin_top_up(
@@ -184,9 +189,9 @@ async def test_admin_top_up_non_admin_forbidden(session: AsyncSession, token_ser
 
 
 @pytest.mark.asyncio
-async def test_transaction_history(session: AsyncSession, token_service: TokenService):
+async def test_transaction_history(session: AsyncSession, token_service: TestTokenService):
     """Test getting transaction history."""
-    user_id = 200600 + abs(hash(str(uuid.uuid4()))) % 10000
+    user_id = get_unique_user_id()
     admin_id = 999
 
     # Create multiple transactions
@@ -221,9 +226,9 @@ async def test_transaction_history(session: AsyncSession, token_service: TokenSe
 
 
 @pytest.mark.asyncio
-async def test_event_emission(session: AsyncSession, token_service: TokenService):
+async def test_event_emission(session: AsyncSession, token_service: TestTokenService):
     """Test events are emitted during operations."""
-    user_id = 200700 + abs(hash(str(uuid.uuid4()))) % 10000
+    user_id = get_unique_user_id()
     emitted_events = []
 
     token_service.register_event_handler(lambda e: emitted_events.append(e))
@@ -239,9 +244,9 @@ async def test_event_emission(session: AsyncSession, token_service: TokenService
 
 
 @pytest.mark.asyncio
-async def test_multiple_deductions(session: AsyncSession, token_service: TokenService):
+async def test_multiple_deductions(session: AsyncSession, token_service: TestTokenService):
     """Test multiple sequential deductions work correctly."""
-    user_id = 200800 + abs(hash(str(uuid.uuid4()))) % 10000
+    user_id = get_unique_user_id()
     admin_id = 999
 
     # Top up
@@ -270,4 +275,4 @@ async def test_multiple_deductions(session: AsyncSession, token_service: TokenSe
     print(f"\n✓ Multiple deductions: 1000 -> 500 (5 x 100)")
 
 
-print("\n✅ All TokenService integration tests completed")
+print("\n✅ All TokenService integration tests completed (using test tables)")

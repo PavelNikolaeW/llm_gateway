@@ -4,12 +4,13 @@ import uuid
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.data.repositories import (
-    DialogRepository,
-    MessageRepository,
-    ModelRepository,
-    TokenBalanceRepository,
-    TokenTransactionRepository,
+from tests.conftest import get_unique_user_id
+from tests.test_repositories import (
+    TestDialogRepository,
+    TestMessageRepository,
+    TestModelRepository,
+    TestTokenBalanceRepository,
+    TestTokenTransactionRepository,
 )
 
 
@@ -24,15 +25,15 @@ async def test_data_access_layer_integration(session: AsyncSession):
     - Transaction support
     """
     # Use unique IDs to avoid conflicts between test runs
-    test_user_id = 999000 + abs(hash(str(uuid.uuid4()))) % 1000
+    test_user_id = get_unique_user_id()
     test_model_name = f"test-gpt-4-{uuid.uuid4().hex[:8]}"
 
-    # Initialize repositories
-    dialog_repo = DialogRepository()
-    message_repo = MessageRepository()
-    balance_repo = TokenBalanceRepository()
-    transaction_repo = TokenTransactionRepository()
-    model_repo = ModelRepository()
+    # Initialize test repositories (use test tables)
+    dialog_repo = TestDialogRepository()
+    message_repo = TestMessageRepository()
+    balance_repo = TestTokenBalanceRepository()
+    transaction_repo = TestTokenTransactionRepository()
+    model_repo = TestModelRepository()
 
     # 1. Create model
     model = await model_repo.create(
@@ -56,11 +57,14 @@ async def test_data_access_layer_integration(session: AsyncSession):
     assert dialog.user_id == test_user_id
 
     # 3. Create messages
-    user_msg = await message_repo.create_user_message(session, dialog.id, "Hello!")
+    user_msg = await message_repo.create(
+        session, dialog_id=dialog.id, role="user", content="Hello!"
+    )
     assert user_msg.role == "user"
 
-    assistant_msg = await message_repo.create_assistant_message(
-        session, dialog.id, "Hi!", prompt_tokens=5, completion_tokens=3
+    assistant_msg = await message_repo.create(
+        session, dialog_id=dialog.id, role="assistant", content="Hi!",
+        prompt_tokens=5, completion_tokens=3
     )
     assert assistant_msg.role == "assistant"
 

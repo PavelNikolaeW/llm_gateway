@@ -1,11 +1,15 @@
 """End-to-end tests for token lifecycle.
 
-Tests the complete token flow:
+Tests the complete token flow using test tables:
 1. New user gets initial balance
 2. Admin top-up increases balance
 3. Token deduction for LLM usage
 4. Token limit enforcement
 5. Transaction history tracking
+
+Uses test-specific tables (test_dialogs, test_token_balances, etc.)
+to ensure complete isolation from production data.
+NEVER touches tables starting with api_*.
 """
 import uuid
 from collections.abc import AsyncGenerator
@@ -15,9 +19,10 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.data.models import Dialog, Message, TokenBalance, TokenTransaction
-from src.domain.token_service import TokenService
 from src.shared.exceptions import ForbiddenError, InsufficientTokensError
+from tests.conftest import get_unique_user_id
+from tests.test_models import TestDialog, TestMessage, TestTokenBalance, TestTokenTransaction
+from tests.test_services import TestTokenService
 
 
 class MockLLMProvider:
@@ -48,8 +53,8 @@ class MockLLMProvider:
 
 @pytest.fixture
 def token_service():
-    """Create token service."""
-    return TokenService()
+    """Create test token service that uses test tables."""
+    return TestTokenService()
 
 
 class TestNewUserBalance:
@@ -59,10 +64,10 @@ class TestNewUserBalance:
     async def test_new_user_starts_with_zero_balance(
         self,
         session: AsyncSession,
-        token_service: TokenService,
+        token_service: TestTokenService,
     ):
         """Test new user gets zero balance on first check."""
-        user_id = 400000 + abs(hash(str(uuid.uuid4()))) % 10000
+        user_id = get_unique_user_id()
 
         # Check balance (creates record if not exists)
         has_balance = await token_service.check_balance(session, user_id, estimated_cost=0)
@@ -80,10 +85,10 @@ class TestNewUserBalance:
     async def test_get_balance_creates_record(
         self,
         session: AsyncSession,
-        token_service: TokenService,
+        token_service: TestTokenService,
     ):
         """Test get_balance creates record for new user."""
-        user_id = 400100 + abs(hash(str(uuid.uuid4()))) % 10000
+        user_id = get_unique_user_id()
 
         # Get balance should create record
         balance = await token_service.get_balance(session, user_id)
@@ -102,10 +107,10 @@ class TestAdminTopUp:
     async def test_admin_can_top_up_tokens(
         self,
         session: AsyncSession,
-        token_service: TokenService,
+        token_service: TestTokenService,
     ):
         """Test admin can add tokens to user balance."""
-        user_id = 400200 + abs(hash(str(uuid.uuid4()))) % 10000
+        user_id = get_unique_user_id()
         admin_id = 999
 
         # Top up tokens
@@ -125,10 +130,10 @@ class TestAdminTopUp:
     async def test_non_admin_cannot_top_up(
         self,
         session: AsyncSession,
-        token_service: TokenService,
+        token_service: TestTokenService,
     ):
         """Test non-admin cannot top up tokens."""
-        user_id = 400300 + abs(hash(str(uuid.uuid4()))) % 10000
+        user_id = get_unique_user_id()
         non_admin_id = 1001
 
         with pytest.raises(ForbiddenError):
@@ -142,10 +147,10 @@ class TestAdminTopUp:
     async def test_multiple_top_ups_accumulate(
         self,
         session: AsyncSession,
-        token_service: TokenService,
+        token_service: TestTokenService,
     ):
         """Test multiple top-ups accumulate correctly."""
-        user_id = 400400 + abs(hash(str(uuid.uuid4()))) % 10000
+        user_id = get_unique_user_id()
         admin_id = 999
 
         # First top-up
@@ -175,10 +180,10 @@ class TestTokenDeduction:
     async def test_tokens_deducted_correctly(
         self,
         session: AsyncSession,
-        token_service: TokenService,
+        token_service: TestTokenService,
     ):
         """Test tokens are deducted correctly."""
-        user_id = 400500 + abs(hash(str(uuid.uuid4()))) % 10000
+        user_id = get_unique_user_id()
         admin_id = 999
 
         # Set up balance
@@ -190,12 +195,12 @@ class TestTokenDeduction:
         # Create dialog and message for deduction
         dialog_id = uuid.uuid4()
         message_id = uuid.uuid4()
-        dialog = Dialog(id=dialog_id, user_id=user_id, title="Test", model_name="gpt-3.5-turbo")
+        dialog = TestDialog(id=dialog_id, user_id=user_id, title="Test", model_name="gpt-3.5-turbo")
         session.add(dialog)
         await session.flush()
 
         # Create actual message (required by FK constraint)
-        message = Message(id=message_id, dialog_id=dialog_id, role="assistant", content="Test")
+        message = TestMessage(id=message_id, dialog_id=dialog_id, role="assistant", content="Test")
         session.add(message)
         await session.flush()
 
@@ -216,10 +221,10 @@ class TestTokenDeduction:
     async def test_insufficient_balance_blocks_deduction(
         self,
         session: AsyncSession,
-        token_service: TokenService,
+        token_service: TestTokenService,
     ):
         """Test deduction is blocked when balance is insufficient."""
-        user_id = 400600 + abs(hash(str(uuid.uuid4()))) % 10000
+        user_id = get_unique_user_id()
         admin_id = 999
 
         # Set up small balance
@@ -247,13 +252,13 @@ class TestTokenLimits:
     async def test_balance_can_have_limit(
         self,
         session: AsyncSession,
-        token_service: TokenService,
+        token_service: TestTokenService,
     ):
         """Test balance model can store limit value."""
-        user_id = 400700 + abs(hash(str(uuid.uuid4()))) % 10000
+        user_id = get_unique_user_id()
 
         # Create balance with limit directly using the model
-        balance = TokenBalance(
+        balance = TestTokenBalance(
             user_id=user_id,
             balance=5000,
             limit=10000,
@@ -263,7 +268,7 @@ class TestTokenLimits:
 
         # Verify limit is stored by querying directly
         result = await session.execute(
-            select(TokenBalance).where(TokenBalance.user_id == user_id)
+            select(TestTokenBalance).where(TestTokenBalance.user_id == user_id)
         )
         stored = result.scalar_one()
 
@@ -276,10 +281,10 @@ class TestTokenLimits:
     async def test_balance_with_no_limit(
         self,
         session: AsyncSession,
-        token_service: TokenService,
+        token_service: TestTokenService,
     ):
         """Test balance starts with no limit."""
-        user_id = 400800 + abs(hash(str(uuid.uuid4()))) % 10000
+        user_id = get_unique_user_id()
         admin_id = 999
 
         # Set up balance
@@ -301,10 +306,10 @@ class TestTransactionHistory:
     async def test_transactions_recorded(
         self,
         session: AsyncSession,
-        token_service: TokenService,
+        token_service: TestTokenService,
     ):
         """Test all token changes create transaction records."""
-        user_id = 401000 + abs(hash(str(uuid.uuid4()))) % 10000
+        user_id = get_unique_user_id()
         admin_id = 999
 
         # Top up
@@ -316,11 +321,11 @@ class TestTransactionHistory:
         # Create dialog and message for deduction
         dialog_id = uuid.uuid4()
         message_id = uuid.uuid4()
-        dialog = Dialog(id=dialog_id, user_id=user_id, title="Test", model_name="gpt-3.5-turbo")
+        dialog = TestDialog(id=dialog_id, user_id=user_id, title="Test", model_name="gpt-3.5-turbo")
         session.add(dialog)
         await session.flush()
 
-        message = Message(id=message_id, dialog_id=dialog_id, role="assistant", content="Test")
+        message = TestMessage(id=message_id, dialog_id=dialog_id, role="assistant", content="Test")
         session.add(message)
         await session.flush()
 
@@ -332,9 +337,9 @@ class TestTransactionHistory:
 
         # Get transactions
         result = await session.execute(
-            select(TokenTransaction)
-            .where(TokenTransaction.user_id == user_id)
-            .order_by(TokenTransaction.created_at)
+            select(TestTokenTransaction)
+            .where(TestTokenTransaction.user_id == user_id)
+            .order_by(TestTokenTransaction.created_at)
         )
         transactions = result.scalars().all()
 
@@ -352,10 +357,10 @@ class TestTransactionHistory:
     async def test_transaction_includes_metadata(
         self,
         session: AsyncSession,
-        token_service: TokenService,
+        token_service: TestTokenService,
     ):
         """Test transactions include relevant metadata."""
-        user_id = 401100 + abs(hash(str(uuid.uuid4()))) % 10000
+        user_id = get_unique_user_id()
         admin_id = 999
 
         # Top up with admin
@@ -377,10 +382,10 @@ class TestBalanceStats:
     async def test_get_token_stats(
         self,
         session: AsyncSession,
-        token_service: TokenService,
+        token_service: TestTokenService,
     ):
         """Test get_token_stats returns correct data."""
-        user_id = 401200 + abs(hash(str(uuid.uuid4()))) % 10000
+        user_id = get_unique_user_id()
         admin_id = 999
 
         # Set up balance
@@ -392,11 +397,11 @@ class TestBalanceStats:
         # Create dialog and message for deduction
         dialog_id = uuid.uuid4()
         message_id = uuid.uuid4()
-        dialog = Dialog(id=dialog_id, user_id=user_id, title="Test", model_name="gpt-3.5-turbo")
+        dialog = TestDialog(id=dialog_id, user_id=user_id, title="Test", model_name="gpt-3.5-turbo")
         session.add(dialog)
         await session.flush()
 
-        message = Message(id=message_id, dialog_id=dialog_id, role="assistant", content="Test")
+        message = TestMessage(id=message_id, dialog_id=dialog_id, role="assistant", content="Test")
         session.add(message)
         await session.flush()
 
