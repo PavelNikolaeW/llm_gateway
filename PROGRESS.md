@@ -1,9 +1,9 @@
 # Epic Progress Tracker
 
 ## Summary
-- **Completed**: 38/47
+- **Completed**: 39/47
 - **Tests**: 516 passing
-- **Last Updated**: PACK-038
+- **Last Updated**: PACK-039
 
 ## Completed
 
@@ -47,12 +47,12 @@
 | PACK-036 | E2E API Tests | FastAPI TestClient, JWT auth tests, dialog/admin endpoint auth, mocked deps |
 | PACK-037 | Docker Setup | Multi-stage Dockerfile, docker-compose with PostgreSQL/Redis, dev overrides |
 | PACK-038 | CI/CD Pipeline | GitHub Actions CI/CD, lint/test/security/Docker build, Dependabot |
+| PACK-039 | API Documentation | OpenAPI metadata, tag descriptions, error responses, auth docs |
 
 ## Pending
 
 | Pack | Title |
 |------|-------|
-| PACK-039 | API Documentation |
 | PACK-040 | Rate Limiting |
 | PACK-041 | WebSocket Support |
 | PACK-042 | Batch Operations |

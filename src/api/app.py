@@ -18,6 +18,7 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 
+from src.api.rate_limiter import rate_limiter, RateLimitResult
 from src.api.routes import admin_router, dialogs_router, messages_router, tokens_router
 from src.config.logging import configure_logging, get_logger
 from src.config.settings import settings
@@ -168,6 +169,9 @@ def _configure_middleware(app: FastAPI) -> None:
     """Configure custom middleware."""
     # Add request context middleware (adds request_id, logging, metrics)
     app.add_middleware(RequestContextMiddleware)
+
+    # Add rate limiting middleware
+    app.add_middleware(RateLimitMiddleware)
 
     # Add JWT auth middleware
     app.add_middleware(JWTAuthMiddleware)
@@ -425,6 +429,97 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
                 },
             )
             raise
+
+
+class RateLimitMiddleware(BaseHTTPMiddleware):
+    """Middleware for rate limiting requests.
+
+    Enforces per-user rate limits using Redis sliding window.
+    Falls back to allowing requests if Redis unavailable.
+
+    Excludes:
+    - /health
+    - /metrics
+    - /docs
+    - /redoc
+    - /openapi.json
+    """
+
+    # Paths excluded from rate limiting
+    EXCLUDED_PATHS = {"/health", "/metrics", "/docs", "/redoc", "/openapi.json"}
+    EXCLUDED_PREFIXES = ("/health", "/metrics", "/docs", "/redoc")
+
+    async def dispatch(
+        self, request: Request, call_next: RequestResponseEndpoint
+    ) -> Response:
+        # Skip rate limiting for excluded paths
+        if request.url.path in self.EXCLUDED_PATHS:
+            return await call_next(request)
+
+        if request.url.path.startswith(self.EXCLUDED_PREFIXES):
+            return await call_next(request)
+
+        # Get identifier for rate limiting (user_id or IP)
+        identifier = self._get_identifier(request)
+
+        # Check rate limit
+        result = await rate_limiter.check(identifier)
+
+        if not result.allowed:
+            logger.warning(
+                f"Rate limit exceeded",
+                extra={
+                    "request_id": request_id_ctx.get(),
+                    "identifier": identifier,
+                    "path": request.url.path,
+                },
+            )
+            return JSONResponse(
+                status_code=429,
+                content={
+                    "code": "RATE_LIMIT_EXCEEDED",
+                    "message": "Too many requests. Please slow down.",
+                    "request_id": request_id_ctx.get(),
+                    "details": {
+                        "limit": result.limit,
+                        "window_seconds": result.window,
+                        "retry_after": result.reset_at,
+                    },
+                },
+                headers={
+                    "Retry-After": str(result.window),
+                    "X-RateLimit-Limit": str(result.limit),
+                    "X-RateLimit-Remaining": "0",
+                    "X-RateLimit-Reset": str(result.reset_at),
+                },
+            )
+
+        # Add rate limit headers to response
+        response = await call_next(request)
+        response.headers["X-RateLimit-Limit"] = str(result.limit)
+        response.headers["X-RateLimit-Remaining"] = str(result.remaining)
+        response.headers["X-RateLimit-Reset"] = str(result.reset_at)
+
+        return response
+
+    def _get_identifier(self, request: Request) -> str:
+        """Get identifier for rate limiting.
+
+        Uses user_id if authenticated, otherwise IP address.
+        """
+        # Try to get user_id from context (set by JWT middleware)
+        user_id = user_id_ctx.get()
+        if user_id is not None:
+            return f"user:{user_id}"
+
+        # Fall back to IP address
+        client_ip = request.client.host if request.client else "unknown"
+        # Check for X-Forwarded-For header
+        forwarded = request.headers.get("X-Forwarded-For")
+        if forwarded:
+            client_ip = forwarded.split(",")[0].strip()
+
+        return f"ip:{client_ip}"
 
 
 class JWTAuthMiddleware(BaseHTTPMiddleware):
