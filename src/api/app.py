@@ -42,6 +42,27 @@ user_id_ctx: ContextVar[int | None] = ContextVar("user_id", default=None)
 is_admin_ctx: ContextVar[bool] = ContextVar("is_admin", default=False)
 
 
+# OpenAPI Tags metadata
+OPENAPI_TAGS = [
+    {
+        "name": "dialogs",
+        "description": "Dialog management - create, list, and retrieve conversation dialogs.",
+    },
+    {
+        "name": "messages",
+        "description": "Message operations - send messages and stream LLM responses via SSE.",
+    },
+    {
+        "name": "tokens",
+        "description": "Token balance and usage - check remaining tokens and usage stats.",
+    },
+    {
+        "name": "admin",
+        "description": "Admin operations - user management, token allocation, and statistics.",
+    },
+]
+
+
 def create_app() -> FastAPI:
     """Create and configure FastAPI application.
 
@@ -57,11 +78,56 @@ def create_app() -> FastAPI:
 
     app = FastAPI(
         title="LLM Gateway API",
-        description="API gateway for LLM providers with token management",
+        description="""
+## Overview
+
+LLM Gateway is an API gateway for Large Language Model providers with built-in token management.
+
+### Features
+
+- **Multi-provider support**: OpenAI, Anthropic (Claude)
+- **Token management**: Balance tracking, limits, transactions
+- **Streaming**: Server-Sent Events (SSE) for real-time responses
+- **Dialog management**: Persistent conversation history
+- **Admin controls**: User management, token allocation, usage stats
+
+### Authentication
+
+All endpoints (except /health, /metrics, /docs) require JWT authentication.
+
+Include the token in the Authorization header:
+```
+Authorization: Bearer <your-jwt-token>
+```
+
+### Error Responses
+
+All errors follow the format:
+```json
+{
+  "code": "ERROR_CODE",
+  "message": "Human readable message",
+  "request_id": "uuid",
+  "details": {}
+}
+```
+""",
         version="1.0.0",
         docs_url="/docs",
         redoc_url="/redoc",
         openapi_url="/openapi.json",
+        openapi_tags=OPENAPI_TAGS,
+        contact={
+            "name": "LLM Gateway Team",
+        },
+        license_info={
+            "name": "MIT",
+        },
+        responses={
+            401: {"description": "Unauthorized - Invalid or missing JWT token"},
+            403: {"description": "Forbidden - Insufficient permissions"},
+            500: {"description": "Internal Server Error"},
+        },
     )
 
     # Configure middleware

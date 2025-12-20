@@ -1,9 +1,9 @@
 # Epic Progress Tracker
 
 ## Summary
-- **Completed**: 36/47
+- **Completed**: 38/47
 - **Tests**: 516 passing
-- **Last Updated**: PACK-036
+- **Last Updated**: PACK-038
 
 ## Completed
 
@@ -45,13 +45,13 @@
 | PACK-034 | Load Testing Setup | Locust config, DialogUser/TokenUser/HealthCheckUser/AdminUser, 4 profiles |
 | PACK-035 | Integration Tests - DB & LLM | testcontainers, CRUD tests, transaction tests, LLM mocks, E2E message flow |
 | PACK-036 | E2E API Tests | FastAPI TestClient, JWT auth tests, dialog/admin endpoint auth, mocked deps |
+| PACK-037 | Docker Setup | Multi-stage Dockerfile, docker-compose with PostgreSQL/Redis, dev overrides |
+| PACK-038 | CI/CD Pipeline | GitHub Actions CI/CD, lint/test/security/Docker build, Dependabot |
 
 ## Pending
 
 | Pack | Title |
 |------|-------|
-| PACK-037 | Docker Setup |
-| PACK-038 | CI/CD Pipeline |
 | PACK-039 | API Documentation |
 | PACK-040 | Rate Limiting |
 | PACK-041 | WebSocket Support |
