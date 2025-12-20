@@ -290,3 +290,83 @@ class GlobalStatsResponse(BaseModel):
     active_users: int
     top_models: list[ModelUsageStats]
     avg_latency_ms: float
+
+
+# Export/Import Schemas
+
+
+class MessageExport(BaseModel):
+    """Schema for exported message."""
+
+    role: str
+    content: str
+    prompt_tokens: int | None = None
+    completion_tokens: int | None = None
+    created_at: datetime
+
+
+class DialogExport(BaseModel):
+    """Schema for exported dialog."""
+
+    id: UUID
+    title: str | None
+    system_prompt: str | None
+    model_name: str
+    agent_config: dict[str, Any] | None
+    created_at: datetime
+    updated_at: datetime
+    messages: list[MessageExport]
+
+
+class ExportResponse(BaseModel):
+    """Schema for export response."""
+
+    version: str = "1.0"
+    exported_at: datetime
+    user_id: int
+    dialog_count: int
+    message_count: int
+    dialogs: list[DialogExport]
+
+
+class DialogImport(BaseModel):
+    """Schema for importing a dialog."""
+
+    title: str | None = None
+    system_prompt: str | None = None
+    model_name: str | None = None
+    agent_config: dict[str, Any] | None = None
+    messages: list[MessageExport] = Field(default_factory=list)
+
+
+class ImportRequest(BaseModel):
+    """Schema for import request."""
+
+    dialogs: list[DialogImport]
+
+
+class ImportResult(BaseModel):
+    """Schema for import result."""
+
+    dialogs_imported: int
+    messages_imported: int
+    errors: list[str] = Field(default_factory=list)
+
+
+# Audit Log Schemas
+
+
+class AuditLogResponse(BaseModel):
+    """Schema for audit log entry response."""
+
+    id: int
+    user_id: int | None
+    action: str
+    resource_type: str
+    resource_id: str | None
+    details: dict[str, Any] | None
+    ip_address: str | None
+    user_agent: str | None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)

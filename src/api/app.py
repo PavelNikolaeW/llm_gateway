@@ -19,7 +19,7 @@ from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 
 from src.api.rate_limiter import rate_limiter, RateLimitResult
-from src.api.routes import admin_router, dialogs_router, messages_router, tokens_router
+from src.api.routes import admin_router, audit_router, dialogs_router, export_router, messages_router, tokens_router
 from src.config.logging import configure_logging, get_logger
 from src.config.settings import settings
 from src.integrations.jwt_validator import JWTValidator, JWTClaims
@@ -56,6 +56,10 @@ OPENAPI_TAGS = [
     {
         "name": "tokens",
         "description": "Token balance and usage - check remaining tokens and usage stats.",
+    },
+    {
+        "name": "export",
+        "description": "Export/Import - backup and restore dialogs in JSON format.",
     },
     {
         "name": "admin",
@@ -337,7 +341,9 @@ def _register_routes(app: FastAPI) -> None:
 
     # Register API routers
     app.include_router(admin_router, prefix="/api/v1")
+    app.include_router(audit_router, prefix="/api/v1")
     app.include_router(dialogs_router, prefix="/api/v1")
+    app.include_router(export_router, prefix="/api/v1")
     app.include_router(messages_router, prefix="/api/v1")
     app.include_router(tokens_router, prefix="/api/v1")
 
