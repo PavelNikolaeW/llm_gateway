@@ -1,9 +1,9 @@
 # Epic Progress Tracker
 
 ## Summary
-- **Completed**: 33/47
-- **Tests**: 447 passing
-- **Last Updated**: PACK-033
+- **Completed**: 34/47
+- **Tests**: 359 passing
+- **Last Updated**: PACK-034
 
 ## Completed
 
@@ -42,12 +42,12 @@
 | PACK-031 | Integration Tests - Admin | Auth, authorization (403), validation, 14 tests |
 | PACK-032 | E2E Tests - Chat Flow | Dialog creation, message flow, token deduction, history, 9 tests |
 | PACK-033 | E2E Tests - Token Lifecycle | Admin top-up, deduction, limits, transactions, stats, 12 tests |
+| PACK-034 | Load Testing Setup | Locust config, DialogUser/TokenUser/HealthCheckUser/AdminUser, 4 profiles |
 
 ## Pending
 
 | Pack | Title |
 |------|-------|
-| PACK-034 | Load Testing Setup |
 | PACK-035 | Database Migrations |
 | PACK-036 | Docker Setup |
 | PACK-037 | CI/CD Pipeline |
