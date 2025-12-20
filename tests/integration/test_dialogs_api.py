@@ -216,7 +216,10 @@ class TestPublicEndpoints:
         response = client.get("/health")
 
         assert response.status_code == 200
-        assert response.json() == {"status": "ok"}
+        data = response.json()
+        assert "status" in data
+        assert "version" in data
+        assert "components" in data
 
     def test_health_has_request_id(self):
         """Test /health has request ID header."""

@@ -1,9 +1,9 @@
 # Epic Progress Tracker
 
 ## Summary
-- **Completed**: 40/47
-- **Tests**: 528 passing
-- **Last Updated**: PACK-040
+- **Completed**: 42/47
+- **Tests**: 543 passing
+- **Last Updated**: PACK-044
 
 ## Completed
 
@@ -49,6 +49,8 @@
 | PACK-038 | CI/CD Pipeline | GitHub Actions CI/CD, lint/test/security/Docker build, Dependabot |
 | PACK-039 | API Documentation | OpenAPI metadata, tag descriptions, error responses, auth docs |
 | PACK-040 | Rate Limiting | Redis sliding window, per-user limits, graceful degradation, rate limit headers |
+| PACK-043 | Export/Import | GET /export dialogs, POST /import, JSON format with messages |
+| PACK-044 | Audit Logging | AuditLog model, AuditService, GET /admin/audit endpoint |
 
 ## Pending
 
@@ -56,8 +58,6 @@
 |------|-------|
 | PACK-041 | WebSocket Support |
 | PACK-042 | Batch Operations |
-| PACK-043 | Export/Import |
-| PACK-044 | Audit Logging |
 | PACK-045 | Multi-tenancy |
 | PACK-046 | Caching Strategy |
 | PACK-047 | Production Readiness |

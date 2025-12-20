@@ -317,15 +317,43 @@ def _create_error_response(
 
 def _register_routes(app: FastAPI) -> None:
     """Register API routes."""
+    from src.api.health import check_system_health, is_ready, is_alive, HealthStatus
 
     @app.get("/health")
-    async def health_check() -> dict[str, str]:
-        """Health check endpoint.
+    async def health_check() -> dict:
+        """Comprehensive health check endpoint.
 
         Returns:
-            Health status
+            Detailed health status of all components
         """
-        return {"status": "ok"}
+        health = await check_system_health()
+        return health.to_dict()
+
+    @app.get("/health/ready")
+    async def readiness_check() -> dict[str, str]:
+        """Kubernetes readiness probe.
+
+        Returns 200 if ready to receive traffic, 503 otherwise.
+        """
+        if await is_ready():
+            return {"status": "ready"}
+        return JSONResponse(
+            status_code=503,
+            content={"status": "not_ready"},
+        )
+
+    @app.get("/health/live")
+    async def liveness_check() -> dict[str, str]:
+        """Kubernetes liveness probe.
+
+        Returns 200 if the process is alive.
+        """
+        if await is_alive():
+            return {"status": "alive"}
+        return JSONResponse(
+            status_code=503,
+            content={"status": "dead"},
+        )
 
     @app.get("/metrics")
     async def metrics() -> Response:
