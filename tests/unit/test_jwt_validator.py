@@ -189,13 +189,18 @@ class TestJWTValidator:
 
     def test_validate_no_secret_configured_raises(self):
         """Test validation without secret raises UnauthorizedError."""
-        validator = JWTValidator(secret=None, algorithm="HS256")
+        # Must patch settings.jwt_secret to prevent fallback to .env value
+        with patch("src.integrations.jwt_validator.settings") as mock_settings:
+            mock_settings.jwt_secret = None
+            mock_settings.jwt_jwks_url = None
+            mock_settings.jwt_algorithm = "HS256"
+            validator = JWTValidator(secret=None, algorithm="HS256")
 
-        with pytest.raises(UnauthorizedError) as exc_info:
-            validator.validate("any.token.here")
+            with pytest.raises(UnauthorizedError) as exc_info:
+                validator.validate("any.token.here")
 
-        assert exc_info.value.status_code == 401
-        assert "not configured" in exc_info.value.message.lower()
+            assert exc_info.value.status_code == 401
+            assert "not configured" in exc_info.value.message.lower()
 
     def test_validate_is_admin_string_true(self):
         """Test is_admin as string 'true' is converted correctly."""

@@ -158,31 +158,31 @@ class TestSettingsDefaults:
     def test_default_environment(self):
         """Test default environment is development."""
         with patch.dict(os.environ, BASE_ENV, clear=True):
-            settings = Settings()
+            settings = Settings(_env_file=None)
             assert settings.environment == Environment.DEVELOPMENT
 
     def test_default_debug(self):
         """Test default debug is False."""
         with patch.dict(os.environ, BASE_ENV, clear=True):
-            settings = Settings()
+            settings = Settings(_env_file=None)
             assert settings.debug is False
 
     def test_default_log_level(self):
         """Test default log level is INFO."""
         with patch.dict(os.environ, BASE_ENV, clear=True):
-            settings = Settings()
+            settings = Settings(_env_file=None)
             assert settings.log_level == "INFO"
 
     def test_default_llm_timeout(self):
         """Test default LLM timeout."""
         with patch.dict(os.environ, BASE_ENV, clear=True):
-            settings = Settings()
+            settings = Settings(_env_file=None)
             assert settings.llm_timeout == 120
 
     def test_default_rate_limit(self):
         """Test default rate limiting settings."""
         with patch.dict(os.environ, BASE_ENV, clear=True):
-            settings = Settings()
+            settings = Settings(_env_file=None)
             assert settings.rate_limit_enabled is True
             assert settings.rate_limit_requests == 100
             assert settings.rate_limit_window == 60
