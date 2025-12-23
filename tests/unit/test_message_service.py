@@ -317,11 +317,14 @@ async def test_build_messages_includes_system_prompt(message_service, mock_dialo
     """Test built messages include system prompt."""
     session = AsyncMock()
     mock_dialog.system_prompt = "You are a helpful assistant."
-    message_service.message_repo.get_by_dialog.return_value = []
 
-    messages = await message_service._build_messages_for_llm(
-        session, mock_dialog, "Hello"
-    )
+    # User message is now in history (saved before calling _build_messages_for_llm)
+    user_msg = MagicMock(spec=Message)
+    user_msg.role = "user"
+    user_msg.content = "Hello"
+    message_service.message_repo.get_by_dialog.return_value = [user_msg]
+
+    messages = await message_service._build_messages_for_llm(session, mock_dialog)
 
     assert len(messages) == 2
     assert messages[0]["role"] == "system"
@@ -336,15 +339,19 @@ async def test_build_messages_includes_history(message_service, mock_dialog):
     session = AsyncMock()
     mock_dialog.system_prompt = None
 
+    # Previous message in history
     history_message = MagicMock(spec=Message)
     history_message.role = "user"
     history_message.content = "Previous message"
 
-    message_service.message_repo.get_by_dialog.return_value = [history_message]
+    # New message (also in history since it's saved before calling this)
+    new_message = MagicMock(spec=Message)
+    new_message.role = "user"
+    new_message.content = "New message"
 
-    messages = await message_service._build_messages_for_llm(
-        session, mock_dialog, "New message"
-    )
+    message_service.message_repo.get_by_dialog.return_value = [history_message, new_message]
+
+    messages = await message_service._build_messages_for_llm(session, mock_dialog)
 
     assert len(messages) == 2
     assert messages[0]["content"] == "Previous message"

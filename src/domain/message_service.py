@@ -162,11 +162,11 @@ class MessageService:
         self,
         session: AsyncSession,
         dialog: Dialog,
-        user_message: str,
     ) -> list[dict[str, str]]:
         """Build messages list for LLM API.
 
         Includes system prompt (if any) and conversation history.
+        User message should already be saved to DB before calling this.
         """
         messages: list[dict[str, str]] = []
 
@@ -174,13 +174,10 @@ class MessageService:
         if dialog.system_prompt:
             messages.append({"role": "system", "content": dialog.system_prompt})
 
-        # Get conversation history
+        # Get conversation history (includes the just-saved user message)
         history = await self.message_repo.get_by_dialog(session, dialog.id)
         for msg in history:
             messages.append({"role": msg.role, "content": msg.content})
-
-        # Add current user message
-        messages.append({"role": "user", "content": user_message})
 
         return messages
 
@@ -243,8 +240,8 @@ class MessageService:
             )
         )
 
-        # Build messages for LLM
-        messages = await self._build_messages_for_llm(session, dialog, data.content)
+        # Build messages for LLM (user message already saved above)
+        messages = await self._build_messages_for_llm(session, dialog)
 
         # Call LLM
         if self.llm_provider is None:
@@ -268,6 +265,16 @@ class MessageService:
             await session.rollback()
             raise LLMError(f"LLM error: {e}")
 
+        # Estimate tokens if provider returned 0 (e.g. LM Studio doesn't support usage)
+        if prompt_tokens == 0 and completion_tokens == 0:
+            # Rough estimate: ~4 characters per token
+            prompt_text = " ".join(m["content"] for m in messages)
+            prompt_tokens = max(1, len(prompt_text) // 4)
+            completion_tokens = max(1, len(response_content) // 4)
+            logger.debug(
+                f"Estimated tokens: prompt={prompt_tokens}, completion={completion_tokens}"
+            )
+
         # Save assistant message
         assistant_message = await self.message_repo.create_assistant_message(
             session,
@@ -277,20 +284,21 @@ class MessageService:
             completion_tokens=completion_tokens,
         )
 
-        # Deduct tokens (total usage)
+        # Deduct tokens
         total_tokens = prompt_tokens + completion_tokens
-        try:
-            await self.token_service.deduct_tokens(
-                session,
-                user_id,
-                total_tokens,
-                dialog.id,
-                assistant_message.id,
-            )
-        except InsufficientTokensError:
-            # This shouldn't happen since we checked, but handle it
-            await session.rollback()
-            raise
+        if total_tokens > 0:
+            try:
+                await self.token_service.deduct_tokens(
+                    session,
+                    user_id,
+                    total_tokens,
+                    dialog.id,
+                    assistant_message.id,
+                )
+            except InsufficientTokensError:
+                # This shouldn't happen since we checked, but handle it
+                await session.rollback()
+                raise
 
         # Commit transaction (atomic: messages + token deduction)
         await session.commit()
@@ -378,8 +386,8 @@ class MessageService:
             )
         )
 
-        # Build messages for LLM
-        messages = await self._build_messages_for_llm(session, dialog, data.content)
+        # Build messages for LLM (user message already saved above)
+        messages = await self._build_messages_for_llm(session, dialog)
 
         # Call LLM with streaming
         if self.llm_provider is None:
@@ -418,6 +426,16 @@ class MessageService:
             await session.rollback()
             raise LLMError(f"LLM streaming error: {e}")
 
+        # Estimate tokens if provider returned 0 (e.g. LM Studio doesn't support usage)
+        if prompt_tokens == 0 and completion_tokens == 0:
+            # Rough estimate: ~4 characters per token
+            prompt_text = " ".join(m["content"] for m in messages)
+            prompt_tokens = max(1, len(prompt_text) // 4)
+            completion_tokens = max(1, len(full_response) // 4)
+            logger.debug(
+                f"Estimated tokens: prompt={prompt_tokens}, completion={completion_tokens}"
+            )
+
         # Save assistant message
         assistant_message = await self.message_repo.create_assistant_message(
             session,
@@ -429,17 +447,18 @@ class MessageService:
 
         # Deduct tokens
         total_tokens = prompt_tokens + completion_tokens
-        try:
-            await self.token_service.deduct_tokens(
-                session,
-                user_id,
-                total_tokens,
-                dialog.id,
-                assistant_message.id,
-            )
-        except InsufficientTokensError:
-            await session.rollback()
-            raise
+        if total_tokens > 0:
+            try:
+                await self.token_service.deduct_tokens(
+                    session,
+                    user_id,
+                    total_tokens,
+                    dialog.id,
+                    assistant_message.id,
+                )
+            except InsufficientTokensError:
+                await session.rollback()
+                raise
 
         # Commit transaction
         await session.commit()

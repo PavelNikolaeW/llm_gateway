@@ -6,9 +6,12 @@ Configures the FastAPI application with:
 - Global exception handlers
 - Structured logging
 - Health check endpoint
+- Model registry initialization
 """
 import time
 import uuid
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 from contextvars import ContextVar
 from typing import Any
 
@@ -22,6 +25,8 @@ from src.api.rate_limiter import rate_limiter, RateLimitResult
 from src.api.routes import admin_router, audit_router, dialogs_router, export_router, messages_router, tokens_router
 from src.config.logging import configure_logging, get_logger
 from src.config.settings import settings
+from src.data.database import get_session_maker
+from src.domain.model_registry import model_registry
 from src.integrations.jwt_validator import JWTValidator, JWTClaims
 from src.shared.metrics import record_http_request, record_error
 from src.shared.exceptions import (
@@ -44,6 +49,27 @@ is_admin_ctx: ContextVar[bool] = ContextVar("is_admin", default=False)
 
 
 # OpenAPI Tags metadata
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    """Application lifespan context manager.
+
+    Handles startup and shutdown:
+    - Startup: Load model registry from database
+    - Shutdown: Cleanup resources
+    """
+    # Startup
+    logger.info("Loading model registry from database...")
+    session_maker = get_session_maker()
+    async with session_maker() as session:
+        await model_registry.load_models(session)
+    logger.info(f"Model registry loaded: {len(model_registry.get_all_models())} models")
+
+    yield
+
+    # Shutdown
+    logger.info("Application shutting down")
+
+
 OPENAPI_TAGS = [
     {
         "name": "dialogs",
@@ -83,6 +109,7 @@ def create_app() -> FastAPI:
 
     app = FastAPI(
         title="LLM Gateway API",
+        lifespan=lifespan,
         description="""
 ## Overview
 

@@ -42,19 +42,30 @@ class OpenAIClient:
     - Proper error handling (401 -> 500, 429 -> 429, timeout -> 504)
     """
 
-    def __init__(self, api_key: str | None = None, timeout: float = DEFAULT_TIMEOUT):
+    def __init__(
+        self,
+        api_key: str | None = None,
+        base_url: str | None = None,
+        timeout: float = DEFAULT_TIMEOUT,
+    ):
         """Initialize OpenAI client.
 
         Args:
             api_key: OpenAI API key (defaults to settings.openai_api_key)
+            base_url: Custom base URL (defaults to settings.openai_base_url)
+                      Useful for LM Studio, Ollama, or other OpenAI-compatible APIs
             timeout: Request timeout in seconds (default 30s)
         """
         self._api_key = api_key or settings.openai_api_key
+        self._base_url = base_url or settings.openai_base_url
         self._timeout = timeout
         self._last_usage: TokenUsage | None = None
 
         if not self._api_key:
             logger.warning("OpenAI API key not configured")
+
+        if self._base_url:
+            logger.info(f"Using custom OpenAI base URL: {self._base_url}")
 
         # Initialize async client with connection pooling
         self._client: AsyncOpenAI | None = None
@@ -67,6 +78,7 @@ class OpenAIClient:
 
             self._client = AsyncOpenAI(
                 api_key=self._api_key,
+                base_url=self._base_url,  # Support custom endpoints (LM Studio, Ollama)
                 timeout=self._timeout,
                 max_retries=0,  # We handle retries ourselves
             )

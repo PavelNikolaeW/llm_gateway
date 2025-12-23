@@ -1,1 +1,1017 @@
-{"v":1,"root":37,"n":[[37,0,"entity","LLM Gateway","None"],[78,37,"group","System Architecture","Audience: Engineers, DevOps\nPurpose: Define service boundaries, runtime components, infrastructure, and inter-system dependencies.\nScope: Backend, Data Platform, Infrastructure.\nChecklist: Systems, components, typed connections.\nLinks: Software Model, Usage Model\nAssumptions: Single-region deployment initially; horizontal scaling assumed for backend workers."],[30,37,"group","Software Model","Audience: Developers\nPurpose: Internal code modules, shared libraries, cross-cutting concerns, external integrations.\nScope: Domain logic, data access, cross-cutting (auth, validation, observability).\nChecklist: Core modules, shared utilities, external service contracts.\nLinks: System Architecture, Usage Model\nAssumptions: Python 3.11+; asyncio for streaming; FastAPI chosen for native async support and simplicity."],[42,37,"group","Usage Model","Audience: Product, QA, Support\nPurpose: User roles, journeys, system events.\nScope: End-user and admin interactions, event-driven flows.\nChecklist: Roles, journeys, events, triggers.\nLinks: System Architecture, Software Model\nAssumptions: JWT issued by external auth service; admin users have is_admin=true in token."],[50,78,"system","Backend","Purpose: LLM Gateway API service - handle chat requests, manage dialogs, control token usage, admin operations.\nTech/Runtime: Python 3.11+, FastAPI, uvicorn, asyncio for streaming.\nState/Data: Stateless request handlers; session state in DB (dialogs, messages, token balance).\nDependencies: Data Platform (Primary DB, Cache), External LLM providers (OpenAI, Anthropic), External Auth service (JWT validation).\nScaling/HA: Horizontal scaling behind load balancer; stateless workers; async I/O for streaming.\nAssumptions: JWT signature verification done via shared secret or JWKS endpoint; no user auth logic in this service."],[20,78,"system","Data Platform","Purpose: Persistent storage, caching, event delivery.\nTech/Runtime: PostgreSQL 15+, Redis (optional cache for token limits), no queue initially (extend later if async workers needed).\nState/Data: Dialogs, messages, user token balances, usage logs, model configs.\nDependencies: None (foundational).\nScaling/HA: PostgreSQL replica for reads; connection pooling; Redis cluster if caching enabled.\nAssumptions: Single master DB initially; read replicas for reporting; no sharding in v1."],[55,78,"system","Infrastructure","Purpose: Observability, CI/CD, runtime environment, configuration management.\nTech/Runtime: Docker, Kubernetes/ECS, Prometheus/Grafana, structured logging (JSON), CI/CD (GitHub Actions or GitLab CI).\nState/Data: Logs, metrics, traces, config secrets.\nDependencies: Backend, Data Platform.\nScaling/HA: Centralized logging and metrics; alerting on token exhaustion, LLM API errors.\nAssumptions: 12-factor app; secrets in environment variables or vault; no on-prem constraints."],[23,50,"component","API Layer","Responsibility: HTTP routing, request validation, JWT auth middleware, response serialization, streaming coordination.\nInputs: HTTP requests (POST /chat, GET /dialogs, admin endpoints), JWT header.\nOutputs: JSON responses, SSE streams for LLM messages.\nFailure modes: 401 if JWT invalid, 429 if token limit exceeded, 500 if LLM provider fails.\nSecurity: JWT verification, rate limiting per user, input sanitization.\nPerf: Async handlers, connection pooling, streaming without buffering.\nAssumptions: FastAPI dependency injection for JWT claims; Pydantic models for validation."],[33,50,"component","Domain","Responsibility: Business logic - dialog management, message handling, token accounting, model selection, agent configuration.\nInputs: Validated requests from API Layer, user_id, is_admin from JWT.\nOutputs: Domain commands (create dialog, append message, deduct tokens), events (message sent, tokens exhausted).\nFailure modes: Insufficient tokens -> reject request; invalid model -> 400 error.\nSecurity: Enforce user ownership of dialogs, admin-only operations.\nPerf: In-memory calculations for token counts; batch updates for usage logs.\nAssumptions: Token limits checked before LLM call; streaming messages appended incrementally."],[24,50,"component","Data Access","Responsibility: ORM/query layer, transactions, migrations.\nInputs: Domain commands (save dialog, update balance, log usage).\nOutputs: Persisted entities, query results.\nFailure modes: DB connection loss -> retry/circuit breaker; unique constraint violations -> 409.\nSecurity: Parameterized queries (SQL injection protection).\nPerf: Connection pooling, async DB driver (asyncpg), indexes on user_id, dialog_id.\nAssumptions: SQLAlchemy 2.0 async ORM; Alembic for migrations."],[1,50,"component","Integrations","Responsibility: LLM provider clients (OpenAI, Anthropic), external auth token validation (if JWKS).\nInputs: User message, model name, system prompt, streaming flag.\nOutputs: LLM response stream or complete message, token usage metadata.\nFailure modes: Provider API timeout -> 504, rate limit -> 429, invalid API key -> 500.\nSecurity: API keys stored in secrets, never logged.\nPerf: Async HTTP clients (httpx), connection reuse, timeout configs.\nAssumptions: Provider SDKs (openai, anthropic) used; streaming via async generators."],[31,20,"component","Primary DB","Responsibility: Authoritative storage for users, dialogs, messages, token balances, usage logs, model/agent configs.\nInputs: SQL commands from Data Access.\nOutputs: Query results, transaction confirmations.\nFailure modes: Connection pool exhausted -> queue requests; disk full -> alert.\nSecurity: Encrypted at rest, TLS connections, least-privilege DB user.\nPerf: Indexes on user_id, dialog_id, created_at; partitioning for usage logs if volume high.\nAssumptions: PostgreSQL 15+; asyncpg driver; no complex joins (denormalized for speed)."],[48,20,"component","Cache","Responsibility: Cache user token limits, model metadata, JWT public keys (if JWKS).\nInputs: Cache set/get from Domain or API Layer.\nOutputs: Cached values, miss -> fetch from DB.\nFailure modes: Redis down -> fallback to DB (degraded perf).\nSecurity: No sensitive data in cache (or encrypt); TTL to limit stale data.\nPerf: Sub-millisecond reads; connection pooling.\nAssumptions: Redis optional in v1; introduce if token limit checks become bottleneck."],[16,55,"component","Observability","Responsibility: Structured logging, metrics (requests/sec, token usage, LLM latency), tracing, health checks.\nInputs: Log statements, metric increments, span tags.\nOutputs: Logs to stdout (JSON), metrics to Prometheus, traces to Jaeger/Datadog.\nFailure modes: Log volume spike -> sampling; metrics endpoint timeout -> cache last values.\nSecurity: Scrub PII from logs, secure metrics endpoint.\nPerf: Async logging, metrics batching.\nAssumptions: Prometheus scrapes /metrics; structured logs parsed by Loki/ELK."],[49,55,"component","CI/CD","Responsibility: Automated tests, linting, build Docker image, deploy to staging/prod.\nInputs: Git push to main/release branch.\nOutputs: Deployed service, test reports, build artifacts.\nFailure modes: Test failures block deploy; rollback on health check fail.\nSecurity: Secrets in CI vault, image scanning, signed commits.\nPerf: Parallel test execution, layer caching in Docker.\nAssumptions: GitHub Actions or GitLab CI; blue-green or canary deployment."],[57,55,"component","Runtime","Responsibility: Container orchestration, service discovery, load balancing, auto-scaling.\nInputs: Docker image, resource requests/limits, scaling policies.\nOutputs: Running pods/containers, traffic routing.\nFailure modes: Pod crash -> restart; node failure -> reschedule.\nSecurity: Network policies, pod security standards, least-privilege service accounts.\nPerf: HPA on CPU/memory, readiness/liveness probes.\nAssumptions: Kubernetes or ECS; ingress controller for HTTPS termination."],[9,55,"component","Config/Secrets","Responsibility: Environment variables, secret injection (DB password, LLM API keys, JWT secret).\nInputs: ConfigMaps, Secrets (K8s), or vault API.\nOutputs: Env vars in runtime containers.\nFailure modes: Missing secret -> startup failure.\nSecurity: Encrypted secrets store, rotation policy, audit logs.\nPerf: Read-only mounts, no performance impact.\nAssumptions: 12-factor config; secrets injected at deploy time, not committed to repo."],[25,30,"group","Core Modules","Audience: Developers\nPurpose: Main business logic modules - dialogs, messages, token management, model/agent selection.\nScope: Domain entities, use cases, repositories.\nChecklist: Dialog manager, token controller, model registry.\nLinks: System Architecture.Backend.Domain\nAssumptions: Clean architecture - domain layer independent of frameworks."],[22,30,"group","Shared","Audience: Developers\nPurpose: Reusable utilities, schemas, base classes.\nScope: Pydantic models, common exceptions, utilities.\nChecklist: Shared DTOs, exception hierarchy, logging helpers.\nLinks: Core Modules, Cross-cutting\nAssumptions: Shared code has no business logic, pure functions."],[40,30,"group","External Services","Audience: Developers, Ops\nPurpose: Contracts for external dependencies (LLM providers, auth service).\nScope: API clients, DTOs, retry/circuit breaker policies.\nChecklist: OpenAI client, Anthropic client, JWT validator.\nLinks: System Architecture.Backend.Integrations\nAssumptions: Provider SDKs wrapped in adapters for testability."],[6,30,"group","Cross-cutting","Audience: Developers, Ops\nPurpose: Production-ready concerns - auth, validation, errors, observability, config, migrations, testing, deployment.\nScope: Middleware, decorators, test fixtures, deployment scripts.\nChecklist: Auth middleware, error handlers, observability setup, migration scripts, test strategy, deployment docs.\nLinks: System Architecture.Backend, System Architecture.Infrastructure\nAssumptions: Applied via FastAPI dependencies and middleware."],[71,6,"component","Auth","Responsibility: JWT verification, user_id extraction, is_admin claim check, admin-only route protection.\nInputs: Authorization header (Bearer token).\nOutputs: Validated user claims (user_id, is_admin), 401 if invalid.\nFailure modes: Token expired -> 401; malformed token -> 401; missing secret -> 500.\nSecurity: Verify signature, check expiry, validate issuer/audience.\nPerf: Cache JWT public keys (JWKS), async verification.\nAssumptions: PyJWT library; shared secret or JWKS endpoint for validation."],[61,6,"component","Validation","Responsibility: Request schema validation, business rule checks (e.g., token balance >= cost).\nInputs: HTTP request body, query params.\nOutputs: Validated Pydantic models, 422 if invalid.\nFailure modes: Invalid JSON -> 400; schema mismatch -> 422.\nSecurity: Sanitize inputs, reject oversized payloads.\nPerf: Pydantic compiled validators, minimal regex.\nAssumptions: FastAPI auto-validation; custom validators for business rules."],[47,6,"component","Error Handling","Responsibility: Global exception handlers, error response formatting, logging errors.\nInputs: Exceptions raised in handlers.\nOutputs: JSON error response (code, message, details), log entry.\nFailure modes: Unhandled exception -> 500; sensitive info leak -> sanitize.\nSecurity: Never expose stack traces in prod, sanitize PII.\nPerf: No perf impact (error path).\nAssumptions: FastAPI exception handlers; structured error codes (e.g., INSUFFICIENT_TOKENS)."],[59,6,"component","Observability","Responsibility: Same as Infrastructure.Observability but code-level - log decorators, metric increments, trace spans.\nInputs: Function calls, request lifecycle.\nOutputs: Log lines, metric points, trace spans.\nFailure modes: Logging library crash -> fallback to print.\nSecurity: Scrub tokens/passwords from logs.\nPerf: Async logging, sampling for high-volume traces.\nAssumptions: Structlog for structured logs; prometheus_client for metrics; OpenTelemetry optional."],[7,6,"component","Configuration","Responsibility: Load config from env vars, provide typed config objects, validate required settings on startup.\nInputs: Environment variables (DB_URL, JWT_SECRET, OPENAI_API_KEY, etc.).\nOutputs: Config dataclass/Pydantic settings.\nFailure modes: Missing required var -> startup failure with clear error.\nSecurity: Never log secrets; mask in config repr.\nPerf: Load once at startup.\nAssumptions: Pydantic BaseSettings for env var parsing."],[54,6,"component","Migrations","Responsibility: DB schema versioning, migration scripts, rollback support.\nInputs: Alembic migration files.\nOutputs: Applied schema changes.\nFailure modes: Migration conflict -> manual resolution; data loss -> backup/restore.\nSecurity: Migrations run with elevated DB privileges (carefully reviewed).\nPerf: Minimize downtime with online migrations (add column, backfill, drop old).\nAssumptions: Alembic; migrations tested in staging before prod."],[39,6,"doc","Testing Strategy","Audience: Developers, QA\nPurpose: Define testing layers, coverage targets, mocking strategies.\nScope: Unit tests (domain logic), integration tests (DB, LLM mocks), E2E tests (API endpoints).\nChecklist:\n- Unit: pytest, >80% coverage for domain/use cases\n- Integration: testcontainers for PostgreSQL, httpx mock for LLM providers\n- E2E: TestClient (FastAPI), fixture data, admin/user scenarios\n- CI: run tests on PR, block merge if fail\nLinks: Core Modules, External Services, Auth, Validation\nAssumptions: pytest + pytest-asyncio; factories for test data (factory_boy)."],[18,6,"doc","Deployment & Release","Audience: DevOps, Engineers\nPurpose: Deployment workflow, rollback plan, zero-downtime strategy.\nScope: Build Docker image, push to registry, deploy to K8s/ECS, health checks, rollback.\nChecklist:\n- Build: multi-stage Dockerfile, pin dependencies\n- Deploy: blue-green or rolling update, readiness probe waits for DB\n- Rollback: automated on failed health checks, manual trigger available\n- Secrets: injected via K8s Secrets or vault\n- Monitoring: alert on deploy, check error rate spike\nLinks: CI/CD, Runtime, Config/Secrets, Observability\nAssumptions: Semantic versioning; changelog in release notes."],[52,25,"component","Dialog Manager","Responsibility: Create/retrieve/list dialogs, attach settings (system prompt, model, agent), enforce user ownership.\nInputs: user_id, dialog creation request (optional title, system_prompt, model_name, agent_config).\nOutputs: Dialog entity (id, user_id, settings, created_at), list of dialogs for user.\nFailure modes: User tries to access another user's dialog -> 403; invalid model name -> 400.\nSecurity: Filter dialogs by user_id, admin can see all.\nPerf: Index on user_id; paginate list queries.\nAssumptions: Dialog settings mutable; default model if not specified."],[32,25,"component","Message Handler","Responsibility: Append user message to dialog, call LLM, stream assistant response, save final message, deduct tokens.\nInputs: dialog_id, user_id, message content, streaming flag.\nOutputs: SSE stream of assistant message chunks, final message entity, updated token balance.\nFailure modes: Dialog not found -> 404; insufficient tokens -> 402; LLM timeout -> 504.\nSecurity: Verify user owns dialog; sanitize message content.\nPerf: Async streaming, incremental token count, batch DB writes.\nAssumptions: Streaming via async generator; tokens deducted after successful response (or upfront if preferred)."],[65,25,"component","Token Controller","Responsibility: Check user token balance, deduct tokens for LLM usage, top-up tokens (admin only), enforce per-user limits.\nInputs: user_id, token cost (calculated from model + message length), top-up amount (admin).\nOutputs: Updated balance, usage log entry, rejection if insufficient.\nFailure modes: Negative balance -> reject request; race condition on balance update -> DB transaction isolation.\nSecurity: Admin-only top-up, audit log for all token changes.\nPerf: Cached balance (invalidate on update); atomic DB updates.\nAssumptions: Token cost estimated upfront or calculated from LLM response metadata; balance stored as integer (smallest unit)."],[15,25,"component","Model Registry","Responsibility: Maintain list of available LLM models (name, provider, cost per token), select model for dialog, validate model exists.\nInputs: Model name, provider filter.\nOutputs: Model metadata (provider, cost, context_window), list of models.\nFailure modes: Unknown model -> 400; provider unavailable -> fallback model or error.\nSecurity: No security concerns (metadata only).\nPerf: In-memory registry, reloaded on config change.\nAssumptions: Models configured in DB or config file; cost per 1K tokens."],[77,25,"component","Agent Configurator","Responsibility: Define agent types (e.g., default, code_assistant, creative_writer), validate agent config, apply agent settings to LLM request.\nInputs: Agent name, custom config (temperature, max_tokens, etc.).\nOutputs: Agent config object, merged with dialog settings.\nFailure modes: Invalid agent name -> 400; conflicting settings -> last-write-wins or error.\nSecurity: Validate agent config ranges (temperature 0-1, max_tokens"],[64,22,"component","DTOs","Responsibility: Pydantic models for API requests/responses (CreateDialogRequest, ChatRequest, MessageResponse, etc.).\nInputs: JSON request bodies, ORM entities.\nOutputs: Validated request objects, serialized JSON responses.\nFailure modes: Schema mismatch -> 422.\nSecurity: Exclude internal fields (e.g., hashed secrets) from responses.\nPerf: Pydantic V2 for speed.\nAssumptions: Separate DTOs for requests and responses; ORM models converted to DTOs in API layer."],[58,22,"component","Exceptions","Responsibility: Custom exception hierarchy (InsufficientTokensError, DialogNotFoundError, etc.), base exception class.\nInputs: Error conditions in domain logic.\nOutputs: Raised exceptions caught by Error Handling.\nFailure modes: Uncaught exception -> 500.\nSecurity: No sensitive data in exception messages.\nPerf: No perf impact.\nAssumptions: Exceptions map to HTTP status codes in error handlers."],[60,22,"component","Utilities","Responsibility: Common helpers - date formatting, token counting, retry decorators, async utilities.\nInputs: Various (strings, timestamps, async tasks).\nOutputs: Formatted values, retried calls.\nFailure modes: Utility bug -> fix and add tests.\nSecurity: No security logic in utilities.\nPerf: Pure functions, no I/O.\nAssumptions: Minimal dependencies; tested in isolation."],[14,40,"component","OpenAI Client","Responsibility: Adapter for OpenAI API - chat completions, streaming, token usage.\nInputs: Model name, messages, system prompt, streaming flag.\nOutputs: Assistant message (stream or complete), token usage (prompt_tokens, completion_tokens).\nFailure modes: API key invalid -> 500; rate limit -> 429; timeout -> 504.\nSecurity: API key from secrets, never logged.\nPerf: Async client (httpx or openai SDK async), connection pooling, timeout 30s.\nAssumptions: openai Python SDK; streaming via async iterator."],[26,40,"component","Anthropic Client","Responsibility: Adapter for Anthropic API - messages endpoint, streaming, token usage.\nInputs: Model name, messages, system prompt, streaming flag.\nOutputs: Assistant message (stream or complete), token usage.\nFailure modes: Same as OpenAI Client.\nSecurity: API key from secrets.\nPerf: Async client, timeout 30s.\nAssumptions: anthropic Python SDK; similar interface to OpenAI adapter for swappability."],[56,40,"interface","LLM Provider Contract","Protocol: HTTPS REST (provider-specific)\nOperations: send_message(model, messages, system_prompt, stream) -> AsyncIterator[str] | str, get_usage() -> TokenUsage\nAuth: API key in header (provider-specific)\nIdempotency: Not guaranteed by providers (chat is non-idempotent)\nVersioning: Provider API versions pinned in client config\nErrors: 401 (invalid key), 429 (rate limit), 500 (provider error), 504 (timeout)\nAssumptions: Adapters implement common interface; factory selects adapter by provider name."],[67,40,"component","JWT Validator","Responsibility: Validate JWT signature, extract claims (user_id, is_admin), check expiry.\nInputs: JWT string from Authorization header.\nOutputs: Claims dict (user_id, is_admin, exp, iat), raise exception if invalid.\nFailure modes: Expired -> 401; invalid signature -> 401; malformed -> 401.\nSecurity: Verify signature with secret or JWKS; check expiry and nbf.\nPerf: Cache JWKS keys (TTL 1h).\nAssumptions: PyJWT library; HS256 or RS256 algorithm."],[36,42,"group","User Roles","Audience: Product, Support\nPurpose: Define actor types and their permissions.\nScope: End-user, Admin.\nChecklist: Role definitions, permission matrix.\nLinks: Usage Model journeys, Cross-cutting.Auth\nAssumptions: Roles encoded in JWT; no role management in this service."],[5,42,"group","User Journeys","Audience: Product, QA\nPurpose: End-to-end user flows.\nScope: Chat with LLM, manage dialogs, admin operations.\nChecklist: Happy paths, error scenarios, token exhaustion.\nLinks: User Roles, System Events, Backend.API Layer\nAssumptions: Frontend client (web/mobile) consumes API; not part of this backend."],[70,42,"group","System Events","Audience: Developers, Ops\nPurpose: Key domain events for observability, auditing, future event-driven features.\nScope: Message sent, tokens deducted, balance exhausted, admin action.\nChecklist: Event definitions, consumers (logs, metrics, future webhooks).\nLinks: User Journeys, Cross-cutting.Observability\nAssumptions: Events logged initially; future: publish to queue for async processing."],[17,36,"concept","End User","Audience: Product, Support\nPurpose: Regular user of chat interface.\nScope: Create dialogs, send messages, view history, check token balance.\nChecklist:\n- Authenticated via external service (JWT with user_id, is_admin=false)\n- Can only access own dialogs\n- Subject to token limits\n- Cannot top-up tokens (external process or admin)\nLinks: User Journeys (Chat with LLM, Manage Dialogs)\nAssumptions: user_id unique across system; no self-registration in this service."],[68,36,"concept","Admin","Audience: Product, Support\nPurpose: Administer users, tokens, view global stats.\nScope: All user operations + manage token limits, top-up tokens, view all dialogs, usage stats.\nChecklist:\n- Authenticated via external service (JWT with is_admin=true)\n- Unrestricted dialog access (for support)\n- Can modify any user's token balance\n- Access to admin-only endpoints\nLinks: User Journeys (Admin: Manage Users, Admin: Token Operations, Admin: View Stats)\nAssumptions: Admin flag in JWT; no separate admin user table."],[62,5,"process","Chat with LLM","Goal: User sends message in dialog, receives LLM response, tokens deducted.\nTrigger: POST /dialogs/{id}/messages with user message.\nPreconditions: User authenticated, dialog exists and owned by user, sufficient token balance.\nPostconditions: User message and assistant response saved, tokens deducted, balance updated.\nFailure/Fallback: Insufficient tokens -> 402 Payment Required; LLM timeout -> 504, no tokens deducted; dialog not found -> 404.\nAssumptions: Streaming preferred; fallback to non-streaming if client doesn't support SSE."],[27,5,"process","Manage Dialogs","Goal: User creates, retrieves, lists dialogs with custom settings.\nTrigger: POST /dialogs (create), GET /dialogs (list), GET /dialogs/{id} (retrieve).\nPreconditions: User authenticated.\nPostconditions: Dialog created/retrieved, settings applied.\nFailure/Fallback: Invalid model name -> 400; dialog not found -> 404.\nAssumptions: No delete endpoint in v1 (soft-delete in future if needed)."],[12,5,"process","Check Token Balance","Goal: User views current token balance and usage stats.\nTrigger: GET /users/me/tokens.\nPreconditions: User authenticated.\nPostconditions: Balance and usage returned.\nFailure/Fallback: None (always succeeds for valid user).\nAssumptions: Balance includes pending deductions (or not - clarify in API doc)."],[35,5,"process","Admin: Manage Users","Goal: Admin lists users, views user details, sets token limits.\nTrigger: GET /admin/users, GET /admin/users/{id}, PATCH /admin/users/{id}/limits.\nPreconditions: Admin authenticated (is_admin=true).\nPostconditions: User list/details returned, limits updated.\nFailure/Fallback: Non-admin -> 403; user not found -> 404.\nAssumptions: User creation handled by external auth service; this service only reads user_id from JWT."],[63,5,"process","Admin: Token Operations","Goal: Admin tops up user tokens, adjusts balances, views token transaction history.\nTrigger: POST /admin/users/{id}/tokens (top-up), GET /admin/users/{id}/tokens/history.\nPreconditions: Admin authenticated.\nPostconditions: Balance updated, transaction logged.\nFailure/Fallback: Invalid amount -> 400; user not found -> 404.\nAssumptions: Top-up amount can be negative (deduct tokens); audit log for all changes."],[13,5,"process","Admin: View Stats","Goal: Admin views global usage statistics (total tokens used, active users, top models).\nTrigger: GET /admin/stats.\nPreconditions: Admin authenticated.\nPostconditions: Aggregated stats returned.\nFailure/Fallback: None (empty stats if no data).\nAssumptions: Stats computed on-demand or cached; future: pre-aggregated in background job."],[73,70,"entity","Message Sent","When emitted: After user message appended to dialog, before LLM call.\nPayload: {dialog_id, user_id, message_id, content_length, timestamp}\nConsumers: Observability (log, metric increment), future: analytics pipeline.\nDelivery guarantees: At-least-once (via log, no queue yet).\nAssumptions: Logged synchronously; future: publish to event bus."],[21,70,"entity","LLM Response Received","When emitted: After assistant message streamed/saved, tokens calculated.\nPayload: {dialog_id, user_id, message_id, model, prompt_tokens, completion_tokens, latency_ms, timestamp}\nConsumers: Observability (log, metrics: latency, token usage), Token Controller (deduct tokens).\nDelivery guarantees: At-least-once.\nAssumptions: Emitted even if streaming fails mid-way (partial tokens deducted or none - decide)."],[10,70,"entity","Tokens Deducted","When emitted: After token balance updated post-LLM response.\nPayload: {user_id, amount, new_balance, reason: 'llm_usage', dialog_id, message_id, timestamp}\nConsumers: Observability (audit log), future: billing system.\nDelivery guarantees: At-least-once.\nAssumptions: Logged after DB commit; idempotent (same message_id won't deduct twice)."],[3,70,"entity","Balance Exhausted","When emitted: When token deduction brings balance to"],[76,70,"entity","Admin Action","When emitted: After admin modifies user limits or tops up tokens.\nPayload: {admin_user_id, target_user_id, action: 'top_up'|'set_limit', amount, timestamp}\nConsumers: Observability (audit log), compliance reporting.\nDelivery guarantees: At-least-once.\nAssumptions: All admin actions logged; retention policy for audit logs."],[44,62,"step","Validate Request","Action: API Layer validates JWT, extracts user_id, checks dialog ownership, validates message schema.\nInputs/Outputs: HTTP request -> user_id, dialog_id, message content.\nFailure: 401 if JWT invalid, 403 if dialog not owned, 422 if schema invalid.\nAssumptions: Validation middleware applied before handler."],[46,62,"step","Check Token Balance","Action: Token Controller checks if user balance >= estimated cost.\nInputs/Outputs: user_id, estimated_cost (from model + message length) -> boolean.\nFailure: Insufficient tokens -> emit Balance Exhausted event, return 402.\nAssumptions: Cost estimated upfront; actual cost deducted after response."],[53,62,"decision","Sufficient Tokens?","Condition: balance >= estimated_cost\nBranches:\n- Yes: proceed to Call LLM\n- No: reject request, return 402, emit Balance Exhausted event\nAssumptions: Estimated cost calculated from model pricing and input token count."],[51,62,"step","Call LLM","Action: Integrations component selects provider (OpenAI/Anthropic), sends message, streams response.\nInputs/Outputs: dialog settings (model, system_prompt, agent_config), user message -> assistant message stream.\nFailure: Provider timeout -> 504, provider error -> 500, no tokens deducted.\nAssumptions: Timeout 30s; retry on transient errors (optional)."],[2,62,"step","Stream Response","Action: API Layer streams assistant message chunks to client via SSE.\nInputs/Outputs: LLM response stream -> SSE events.\nFailure: Client disconnect -> log, continue saving message; stream error -> log partial message.\nAssumptions: Buffering minimal; client handles reconnect."],[11,62,"step","Save Messages & Deduct Tokens","Action: Data Access saves user message and assistant message, Token Controller deducts actual tokens, emits events.\nInputs/Outputs: Messages, token usage -> DB commit, updated balance, events (Message Sent, LLM Response Received, Tokens Deducted).\nFailure: DB error -> rollback, return 500, no tokens deducted (or deducted and refunded on rollback).\nAssumptions: Transaction wraps save + deduct; events emitted after commit."],[19,27,"step","Create Dialog","Action: Dialog Manager creates dialog with user_id, settings (model, system_prompt, agent_config), saves to DB.\nInputs/Outputs: user_id, CreateDialogRequest -> dialog entity.\nFailure: Invalid model -> 400; DB error -> 500.\nAssumptions: Default settings applied if not provided."],[8,27,"step","Retrieve Dialog","Action: Dialog Manager fetches dialog by id, verifies ownership (or admin).\nInputs/Outputs: dialog_id, user_id, is_admin -> dialog entity.\nFailure: Not found -> 404; not owned and not admin -> 403.\nAssumptions: Messages loaded lazily (separate endpoint)."],[45,27,"step","List Dialogs","Action: Dialog Manager queries dialogs for user_id, paginates, orders by created_at desc.\nInputs/Outputs: user_id, pagination params -> list of dialog entities.\nFailure: None (empty list if no dialogs).\nAssumptions: Default page size 20; cursor-based pagination in future."],[69,12,"step","Fetch Balance","Action: Token Controller retrieves current balance and usage stats for user_id.\nInputs/Outputs: user_id -> balance, total_used, limit.\nFailure: User not found (new user) -> return default balance (e.g., 0 or initial grant).\nAssumptions: Balance initialized on first request or via admin."],[66,35,"step","List Users","Action: Admin queries all users (user_id from usage logs or dialogs), aggregates stats.\nInputs/Outputs: Pagination params -> list of user_id + stats (dialog count, token usage).\nFailure: None (empty if no users).\nAssumptions: User list derived from activity (no separate user table unless needed)."],[4,35,"step","Set Token Limit","Action: Admin updates per-user token limit, saves to DB, emits Admin Action event.\nInputs/Outputs: user_id, new_limit -> updated limit, event.\nFailure: Invalid limit (negative) -> 400.\nAssumptions: Limit enforced on next request; no retroactive enforcement."],[43,63,"step","Top-Up Tokens","Action: Admin adds tokens to user balance, logs transaction, emits Admin Action event.\nInputs/Outputs: user_id, amount -> updated balance, transaction log, event.\nFailure: Invalid amount -> 400.\nAssumptions: Negative amount allowed for deduction; balance can go negative (or enforce >=0)."],[29,63,"step","View Token History","Action: Admin queries token transaction log for user_id, orders by timestamp desc.\nInputs/Outputs: user_id, pagination -> list of transactions (amount, reason, timestamp).\nFailure: None (empty if no history).\nAssumptions: Retained indefinitely or per retention policy."],[38,13,"step","Aggregate Stats","Action: Query usage logs, dialogs, aggregate by model, user, time period.\nInputs/Outputs: Date range, filters -> {total_tokens, active_users, top_models, avg_latency}.\nFailure: None (empty stats if no data).\nAssumptions: Computed on-demand; cache for 5 min; future: pre-aggregated daily."],[34,20,"data","dialogs","Schema keys: id (PK, UUID), user_id (indexed), title (nullable), system_prompt (text, nullable), model_name (FK to models or string), agent_config (JSONB, nullable), created_at, updated_at\nIndexes: user_id, created_at\nRelations: messages (1:N), user_id references external auth (soft FK, no constraint)\nRetention/PII: user_id is PII (pseudonymized); retain indefinitely or per policy; soft-delete if needed\nMigration notes: Initial migration creates table; add agent_config in v2 if not in v1\nAssumptions: UUID PK for global uniqueness; model_name stored as string (validated at runtime)."],[28,20,"data","messages","Schema keys: id (PK, UUID), dialog_id (FK, indexed), role ('user'|'assistant'), content (text), prompt_tokens (int, nullable), completion_tokens (int, nullable), created_at\nIndexes: dialog_id, created_at\nRelations: dialog (N:1)\nRetention/PII: content is PII; retention policy applies; consider encryption at rest\nMigration notes: Add token columns in v1; partition by created_at if volume high\nAssumptions: No editing of messages (immutable); streaming messages saved incrementally or as final."],[72,20,"data","token_balances","Schema keys: user_id (PK, indexed), balance (int, tokens), limit (int, nullable), updated_at\nIndexes: user_id (PK)\nRelations: None (user_id from JWT)\nRetention/PII: user_id is PII; retain as long as user active\nMigration notes: Initial migration; default balance 0; admin sets initial grant manually\nAssumptions: Balance in smallest unit (e.g., 1 token = 1 unit); limit nullable (no limit if null)."],[41,20,"data","token_transactions","Schema keys: id (PK, serial), user_id (indexed), amount (int, can be negative), reason ('llm_usage'|'admin_top_up'|'admin_deduct'), dialog_id (FK, nullable), message_id (FK, nullable), admin_user_id (nullable), created_at\nIndexes: user_id, created_at\nRelations: dialog, message (nullable FKs)\nRetention/PII: Audit log, retain per compliance (e.g., 7 years); user_id PII\nMigration notes: Partition by created_at monthly if volume high\nAssumptions: Append-only; immutable; unique constraint on (message_id, reason) to prevent double deduction."],[75,20,"data","models","Schema keys: name (PK, string), provider ('openai'|'anthropic'), cost_per_1k_prompt_tokens (decimal), cost_per_1k_completion_tokens (decimal), context_window (int), enabled (boolean), created_at, updated_at\nIndexes: name (PK), provider\nRelations: None\nRetention/PII: No PII; config data\nMigration notes: Seed with initial models (gpt-4, claude-3-opus, etc.); admin can add via migration or config\nAssumptions: Cost in USD or tokens (decide); updated manually or via config sync."],[74,20,"interface","Database Schema API","Protocol: SQL (PostgreSQL wire protocol)\nOperations: CRUD on dialogs, messages, token_balances, token_transactions, models; transactions for atomic updates\nAuth: DB user with least privilege (no DDL in app runtime)\nIdempotency: Inserts idempotent via unique constraints; updates by PK idempotent\nVersioning: Schema versioned via Alembic migrations\nErrors: UniqueViolation (409), ForeignKeyViolation (400), ConnectionError (500)\nAssumptions: Async queries via asyncpg; connection pooling (max 20 conns)."]],"o":[[37,[78,30,42]],[78,[50,20,55]],[30,[25,22,40,6]],[42,[36,5,70]],[50,[23,33,24,1]],[20,[31,48,34,28,72,41,75,74]],[55,[16,49,57,9]],[25,[52,32,65,15,77]],[22,[64,58,60]],[40,[14,26,56,67]],[6,[71,61,47,59,7,54,39,18]],[36,[17,68]],[5,[62,27,12,35,63,13]],[70,[73,21,10,3,76]],[62,[44,46,53,51,2,11]],[27,[19,8,45]],[12,[69]],[35,[66,4]],[63,[43,29]],[13,[38]]],"e":[[1,14],[1,26],[1,67],[2,23],[3,16],[4,24],[4,76],[8,52],[9,20],[9,50],[9,55],[10,16],[11,24],[11,65],[14,56],[15,24],[16,20],[16,50],[17,12],[17,27],[17,62],[19,52],[21,16],[21,65],[23,33],[23,47],[23,61],[23,71],[24,28],[24,31],[24,34],[24,41],[24,48],[24,72],[24,75],[26,56],[29,24],[31,74],[32,1],[32,21],[32,24],[32,65],[32,73],[33,1],[33,15],[33,24],[33,32],[33,52],[33,65],[33,77],[38,24],[43,65],[43,76],[44,23],[45,52],[46,65],[51,1],[52,24],[53,46],[65,3],[65,10],[65,24],[66,24],[68,13],[68,35],[68,63],[69,65],[71,23],[73,16],[76,16],[77,24]]}
+{
+  "v": 1,
+  "root": 37,
+  "n": [
+    [
+      37,
+      0,
+      "entity",
+      "LLM Gateway",
+      "None"
+    ],
+    [
+      78,
+      37,
+      "group",
+      "System Architecture",
+      "Audience: Engineers, DevOps\nPurpose: Define service boundaries, runtime components, infrastructure, and inter-system dependencies.\nScope: Backend, Data Platform, Infrastructure.\nChecklist: Systems, components, typed connections.\nLinks: Software Model, Usage Model\nAssumptions: Single-region deployment initially; horizontal scaling assumed for backend workers."
+    ],
+    [
+      30,
+      37,
+      "group",
+      "Software Model",
+      "Audience: Developers\nPurpose: Internal code modules, shared libraries, cross-cutting concerns, external integrations.\nScope: Domain logic, data access, cross-cutting (auth, validation, observability).\nChecklist: Core modules, shared utilities, external service contracts.\nLinks: System Architecture, Usage Model\nAssumptions: Python 3.11+; asyncio for streaming; FastAPI chosen for native async support and simplicity."
+    ],
+    [
+      42,
+      37,
+      "group",
+      "Usage Model",
+      "Audience: Product, QA, Support\nPurpose: User roles, journeys, system events.\nScope: End-user and admin interactions, event-driven flows.\nChecklist: Roles, journeys, events, triggers.\nLinks: System Architecture, Software Model\nAssumptions: JWT issued by external auth service; admin users have is_admin=true in token."
+    ],
+    [
+      50,
+      78,
+      "system",
+      "Backend",
+      "Purpose: LLM Gateway API service - handle chat requests, manage dialogs, control token usage, admin operations.\nTech/Runtime: Python 3.11+, FastAPI, uvicorn, asyncio for streaming.\nState/Data: Stateless request handlers; session state in DB (dialogs, messages, token balance).\nDependencies: Data Platform (Primary DB, Cache), External LLM providers (OpenAI, Anthropic), External Auth service (JWT validation).\nScaling/HA: Horizontal scaling behind load balancer; stateless workers; async I/O for streaming.\nAssumptions: JWT signature verification done via shared secret or JWKS endpoint; no user auth logic in this service."
+    ],
+    [
+      20,
+      78,
+      "system",
+      "Data Platform",
+      "Purpose: Persistent storage, caching, event delivery.\nTech/Runtime: PostgreSQL 15+, Redis (optional cache for token limits), no queue initially (extend later if async workers needed).\nState/Data: Dialogs, messages, user token balances, usage logs, model configs.\nDependencies: None (foundational).\nScaling/HA: PostgreSQL replica for reads; connection pooling; Redis cluster if caching enabled.\nAssumptions: Single master DB initially; read replicas for reporting; no sharding in v1."
+    ],
+    [
+      55,
+      78,
+      "system",
+      "Infrastructure",
+      "Purpose: Observability, CI/CD, runtime environment, configuration management.\nTech/Runtime: Docker, Kubernetes/ECS, Prometheus/Grafana, structured logging (JSON), CI/CD (GitHub Actions or GitLab CI).\nState/Data: Logs, metrics, traces, config secrets.\nDependencies: Backend, Data Platform.\nScaling/HA: Centralized logging and metrics; alerting on token exhaustion, LLM API errors.\nAssumptions: 12-factor app; secrets in environment variables or vault; no on-prem constraints."
+    ],
+    [
+      23,
+      50,
+      "component",
+      "API Layer",
+      "Responsibility: HTTP routing, request validation, JWT auth middleware, response serialization, streaming coordination.\nInputs: HTTP requests (POST /chat, GET /dialogs, admin endpoints), JWT header.\nOutputs: JSON responses, SSE streams for LLM messages.\nFailure modes: 401 if JWT invalid, 429 if token limit exceeded, 500 if LLM provider fails.\nSecurity: JWT verification, rate limiting per user, input sanitization.\nPerf: Async handlers, connection pooling, streaming without buffering.\nAssumptions: FastAPI dependency injection for JWT claims; Pydantic models for validation."
+    ],
+    [
+      33,
+      50,
+      "component",
+      "Domain",
+      "Responsibility: Business logic - dialog management, message handling, token accounting, model selection, agent configuration.\nInputs: Validated requests from API Layer, user_id, is_admin from JWT.\nOutputs: Domain commands (create dialog, append message, deduct tokens), events (message sent, tokens exhausted).\nFailure modes: Insufficient tokens -> reject request; invalid model -> 400 error.\nSecurity: Enforce user ownership of dialogs, admin-only operations.\nPerf: In-memory calculations for token counts; batch updates for usage logs.\nAssumptions: Token limits checked before LLM call; streaming messages appended incrementally."
+    ],
+    [
+      24,
+      50,
+      "component",
+      "Data Access",
+      "Responsibility: ORM/query layer, transactions, migrations.\nInputs: Domain commands (save dialog, update balance, log usage).\nOutputs: Persisted entities, query results.\nFailure modes: DB connection loss -> retry/circuit breaker; unique constraint violations -> 409.\nSecurity: Parameterized queries (SQL injection protection).\nPerf: Connection pooling, async DB driver (asyncpg), indexes on user_id, dialog_id.\nAssumptions: SQLAlchemy 2.0 async ORM; Alembic for migrations."
+    ],
+    [
+      1,
+      50,
+      "component",
+      "Integrations",
+      "Responsibility: LLM provider clients (OpenAI, Anthropic), external auth token validation (if JWKS).\nInputs: User message, model name, system prompt, streaming flag.\nOutputs: LLM response stream or complete message, token usage metadata.\nFailure modes: Provider API timeout -> 504, rate limit -> 429, invalid API key -> 500.\nSecurity: API keys stored in secrets, never logged.\nPerf: Async HTTP clients (httpx), connection reuse, timeout configs.\nAssumptions: Provider SDKs (openai, anthropic) used; streaming via async generators."
+    ],
+    [
+      31,
+      20,
+      "component",
+      "Primary DB",
+      "Responsibility: Authoritative storage for users, dialogs, messages, token balances, usage logs, model/agent configs.\nInputs: SQL commands from Data Access.\nOutputs: Query results, transaction confirmations.\nFailure modes: Connection pool exhausted -> queue requests; disk full -> alert.\nSecurity: Encrypted at rest, TLS connections, least-privilege DB user.\nPerf: Indexes on user_id, dialog_id, created_at; partitioning for usage logs if volume high.\nAssumptions: PostgreSQL 15+; asyncpg driver; no complex joins (denormalized for speed)."
+    ],
+    [
+      48,
+      20,
+      "component",
+      "Cache",
+      "Responsibility: Cache user token limits, model metadata, JWT public keys (if JWKS).\nInputs: Cache set/get from Domain or API Layer.\nOutputs: Cached values, miss -> fetch from DB.\nFailure modes: Redis down -> fallback to DB (degraded perf).\nSecurity: No sensitive data in cache (or encrypt); TTL to limit stale data.\nPerf: Sub-millisecond reads; connection pooling.\nAssumptions: Redis optional in v1; introduce if token limit checks become bottleneck."
+    ],
+    [
+      16,
+      55,
+      "component",
+      "Observability",
+      "Responsibility: Structured logging, metrics (requests/sec, token usage, LLM latency), tracing, health checks.\nInputs: Log statements, metric increments, span tags.\nOutputs: Logs to stdout (JSON), metrics to Prometheus, traces to Jaeger/Datadog.\nFailure modes: Log volume spike -> sampling; metrics endpoint timeout -> cache last values.\nSecurity: Scrub PII from logs, secure metrics endpoint.\nPerf: Async logging, metrics batching.\nAssumptions: Prometheus scrapes /metrics; structured logs parsed by Loki/ELK."
+    ],
+    [
+      49,
+      55,
+      "component",
+      "CI/CD",
+      "Responsibility: Automated tests, linting, build Docker image, deploy to staging/prod.\nInputs: Git push to main/release branch.\nOutputs: Deployed service, test reports, build artifacts.\nFailure modes: Test failures block deploy; rollback on health check fail.\nSecurity: Secrets in CI vault, image scanning, signed commits.\nPerf: Parallel test execution, layer caching in Docker.\nAssumptions: GitHub Actions or GitLab CI; blue-green or canary deployment."
+    ],
+    [
+      57,
+      55,
+      "component",
+      "Runtime",
+      "Responsibility: Container orchestration, service discovery, load balancing, auto-scaling.\nInputs: Docker image, resource requests/limits, scaling policies.\nOutputs: Running pods/containers, traffic routing.\nFailure modes: Pod crash -> restart; node failure -> reschedule.\nSecurity: Network policies, pod security standards, least-privilege service accounts.\nPerf: HPA on CPU/memory, readiness/liveness probes.\nAssumptions: Kubernetes or ECS; ingress controller for HTTPS termination."
+    ],
+    [
+      9,
+      55,
+      "component",
+      "Config/Secrets",
+      "Responsibility: Environment variables, secret injection (DB password, LLM API keys, JWT secret).\nInputs: ConfigMaps, Secrets (K8s), or vault API.\nOutputs: Env vars in runtime containers.\nFailure modes: Missing secret -> startup failure.\nSecurity: Encrypted secrets store, rotation policy, audit logs.\nPerf: Read-only mounts, no performance impact.\nAssumptions: 12-factor config; secrets injected at deploy time, not committed to repo."
+    ],
+    [
+      25,
+      30,
+      "group",
+      "Core Modules",
+      "Audience: Developers\nPurpose: Main business logic modules - dialogs, messages, token management, model/agent selection.\nScope: Domain entities, use cases, repositories.\nChecklist: Dialog manager, token controller, model registry.\nLinks: System Architecture.Backend.Domain\nAssumptions: Clean architecture - domain layer independent of frameworks."
+    ],
+    [
+      22,
+      30,
+      "group",
+      "Shared",
+      "Audience: Developers\nPurpose: Reusable utilities, schemas, base classes.\nScope: Pydantic models, common exceptions, utilities.\nChecklist: Shared DTOs, exception hierarchy, logging helpers.\nLinks: Core Modules, Cross-cutting\nAssumptions: Shared code has no business logic, pure functions."
+    ],
+    [
+      40,
+      30,
+      "group",
+      "External Services",
+      "Audience: Developers, Ops\nPurpose: Contracts for external dependencies (LLM providers, auth service).\nScope: API clients, DTOs, retry/circuit breaker policies.\nChecklist: OpenAI client, Anthropic client, JWT validator.\nLinks: System Architecture.Backend.Integrations\nAssumptions: Provider SDKs wrapped in adapters for testability."
+    ],
+    [
+      6,
+      30,
+      "group",
+      "Cross-cutting",
+      "Audience: Developers, Ops\nPurpose: Production-ready concerns - auth, validation, errors, observability, config, migrations, testing, deployment.\nScope: Middleware, decorators, test fixtures, deployment scripts.\nChecklist: Auth middleware, error handlers, observability setup, migration scripts, test strategy, deployment docs.\nLinks: System Architecture.Backend, System Architecture.Infrastructure\nAssumptions: Applied via FastAPI dependencies and middleware."
+    ],
+    [
+      71,
+      6,
+      "component",
+      "Auth",
+      "Responsibility: JWT verification, user_id extraction, is_admin claim check, admin-only route protection.\nInputs: Authorization header (Bearer token).\nOutputs: Validated user claims (user_id, is_admin), 401 if invalid.\nFailure modes: Token expired -> 401; malformed token -> 401; missing secret -> 500.\nSecurity: Verify signature, check expiry, validate issuer/audience.\nPerf: Cache JWT public keys (JWKS), async verification.\nAssumptions: PyJWT library; shared secret or JWKS endpoint for validation."
+    ],
+    [
+      61,
+      6,
+      "component",
+      "Validation",
+      "Responsibility: Request schema validation, business rule checks (e.g., token balance >= cost).\nInputs: HTTP request body, query params.\nOutputs: Validated Pydantic models, 422 if invalid.\nFailure modes: Invalid JSON -> 400; schema mismatch -> 422.\nSecurity: Sanitize inputs, reject oversized payloads.\nPerf: Pydantic compiled validators, minimal regex.\nAssumptions: FastAPI auto-validation; custom validators for business rules."
+    ],
+    [
+      47,
+      6,
+      "component",
+      "Error Handling",
+      "Responsibility: Global exception handlers, error response formatting, logging errors.\nInputs: Exceptions raised in handlers.\nOutputs: JSON error response (code, message, details), log entry.\nFailure modes: Unhandled exception -> 500; sensitive info leak -> sanitize.\nSecurity: Never expose stack traces in prod, sanitize PII.\nPerf: No perf impact (error path).\nAssumptions: FastAPI exception handlers; structured error codes (e.g., INSUFFICIENT_TOKENS)."
+    ],
+    [
+      59,
+      6,
+      "component",
+      "Observability",
+      "Responsibility: Same as Infrastructure.Observability but code-level - log decorators, metric increments, trace spans.\nInputs: Function calls, request lifecycle.\nOutputs: Log lines, metric points, trace spans.\nFailure modes: Logging library crash -> fallback to print.\nSecurity: Scrub tokens/passwords from logs.\nPerf: Async logging, sampling for high-volume traces.\nAssumptions: Structlog for structured logs; prometheus_client for metrics; OpenTelemetry optional."
+    ],
+    [
+      7,
+      6,
+      "component",
+      "Configuration",
+      "Responsibility: Load config from env vars, provide typed config objects, validate required settings on startup.\nInputs: Environment variables (DB_URL, JWT_SECRET, OPENAI_API_KEY, etc.).\nOutputs: Config dataclass/Pydantic settings.\nFailure modes: Missing required var -> startup failure with clear error.\nSecurity: Never log secrets; mask in config repr.\nPerf: Load once at startup.\nAssumptions: Pydantic BaseSettings for env var parsing."
+    ],
+    [
+      54,
+      6,
+      "component",
+      "Migrations",
+      "Responsibility: DB schema versioning, migration scripts, rollback support.\nInputs: Alembic migration files.\nOutputs: Applied schema changes.\nFailure modes: Migration conflict -> manual resolution; data loss -> backup/restore.\nSecurity: Migrations run with elevated DB privileges (carefully reviewed).\nPerf: Minimize downtime with online migrations (add column, backfill, drop old).\nAssumptions: Alembic; migrations tested in staging before prod."
+    ],
+    [
+      39,
+      6,
+      "doc",
+      "Testing Strategy",
+      "Audience: Developers, QA\nPurpose: Define testing layers, coverage targets, mocking strategies.\nScope: Unit tests (domain logic), integration tests (DB, LLM mocks), E2E tests (API endpoints).\nChecklist:\n- Unit: pytest, >80% coverage for domain/use cases\n- Integration: testcontainers for PostgreSQL, httpx mock for LLM providers\n- E2E: TestClient (FastAPI), fixture data, admin/user scenarios\n- CI: run tests on PR, block merge if fail\nLinks: Core Modules, External Services, Auth, Validation\nAssumptions: pytest + pytest-asyncio; factories for test data (factory_boy)."
+    ],
+    [
+      18,
+      6,
+      "doc",
+      "Deployment & Release",
+      "Audience: DevOps, Engineers\nPurpose: Deployment workflow, rollback plan, zero-downtime strategy.\nScope: Build Docker image, push to registry, deploy to K8s/ECS, health checks, rollback.\nChecklist:\n- Build: multi-stage Dockerfile, pin dependencies\n- Deploy: blue-green or rolling update, readiness probe waits for DB\n- Rollback: automated on failed health checks, manual trigger available\n- Secrets: injected via K8s Secrets or vault\n- Monitoring: alert on deploy, check error rate spike\nLinks: CI/CD, Runtime, Config/Secrets, Observability\nAssumptions: Semantic versioning; changelog in release notes."
+    ],
+    [
+      52,
+      25,
+      "component",
+      "Dialog Manager",
+      "Responsibility: Create/retrieve/list dialogs, attach settings (system prompt, model, agent), enforce user ownership.\nInputs: user_id, dialog creation request (optional title, system_prompt, model_name, agent_config).\nOutputs: Dialog entity (id, user_id, settings, created_at), list of dialogs for user.\nFailure modes: User tries to access another user's dialog -> 403; invalid model name -> 400.\nSecurity: Filter dialogs by user_id, admin can see all.\nPerf: Index on user_id; paginate list queries.\nAssumptions: Dialog settings mutable; default model if not specified."
+    ],
+    [
+      32,
+      25,
+      "component",
+      "Message Handler",
+      "Responsibility: Append user message to dialog, call LLM, stream assistant response, save final message, deduct tokens.\nInputs: dialog_id, user_id, message content, streaming flag.\nOutputs: SSE stream of assistant message chunks, final message entity, updated token balance.\nFailure modes: Dialog not found -> 404; insufficient tokens -> 402; LLM timeout -> 504.\nSecurity: Verify user owns dialog; sanitize message content.\nPerf: Async streaming, incremental token count, batch DB writes.\nAssumptions: Streaming via async generator; tokens deducted after successful response (or upfront if preferred)."
+    ],
+    [
+      65,
+      25,
+      "component",
+      "Token Controller",
+      "Responsibility: Check user token balance, deduct tokens for LLM usage, top-up tokens (admin only), enforce per-user limits.\nInputs: user_id, token cost (calculated from model + message length), top-up amount (admin).\nOutputs: Updated balance, usage log entry, rejection if insufficient.\nFailure modes: Negative balance -> reject request; race condition on balance update -> DB transaction isolation.\nSecurity: Admin-only top-up, audit log for all token changes.\nPerf: Cached balance (invalidate on update); atomic DB updates.\nAssumptions: Token cost estimated upfront or calculated from LLM response metadata; balance stored as integer (smallest unit)."
+    ],
+    [
+      15,
+      25,
+      "component",
+      "Model Registry",
+      "Responsibility: Maintain list of available LLM models (name, provider, cost per token), select model for dialog, validate model exists.\nInputs: Model name, provider filter.\nOutputs: Model metadata (provider, cost, context_window), list of models.\nFailure modes: Unknown model -> 400; provider unavailable -> fallback model or error.\nSecurity: No security concerns (metadata only).\nPerf: In-memory registry, reloaded on config change.\nAssumptions: Models configured in DB or config file; cost per 1K tokens."
+    ],
+    [
+      77,
+      25,
+      "component",
+      "Agent Configurator",
+      "Responsibility: Define agent types (e.g., default, code_assistant, creative_writer), validate agent config, apply agent settings to LLM request.\nInputs: Agent name, custom config (temperature, max_tokens, etc.).\nOutputs: Agent config object, merged with dialog settings.\nFailure modes: Invalid agent name -> 400; conflicting settings -> last-write-wins or error.\nSecurity: Validate agent config ranges (temperature 0-1, max_tokens"
+    ],
+    [
+      64,
+      22,
+      "component",
+      "DTOs",
+      "Responsibility: Pydantic models for API requests/responses (CreateDialogRequest, ChatRequest, MessageResponse, etc.).\nInputs: JSON request bodies, ORM entities.\nOutputs: Validated request objects, serialized JSON responses.\nFailure modes: Schema mismatch -> 422.\nSecurity: Exclude internal fields (e.g., hashed secrets) from responses.\nPerf: Pydantic V2 for speed.\nAssumptions: Separate DTOs for requests and responses; ORM models converted to DTOs in API layer."
+    ],
+    [
+      58,
+      22,
+      "component",
+      "Exceptions",
+      "Responsibility: Custom exception hierarchy (InsufficientTokensError, DialogNotFoundError, etc.), base exception class.\nInputs: Error conditions in domain logic.\nOutputs: Raised exceptions caught by Error Handling.\nFailure modes: Uncaught exception -> 500.\nSecurity: No sensitive data in exception messages.\nPerf: No perf impact.\nAssumptions: Exceptions map to HTTP status codes in error handlers."
+    ],
+    [
+      60,
+      22,
+      "component",
+      "Utilities",
+      "Responsibility: Common helpers - date formatting, token counting, retry decorators, async utilities.\nInputs: Various (strings, timestamps, async tasks).\nOutputs: Formatted values, retried calls.\nFailure modes: Utility bug -> fix and add tests.\nSecurity: No security logic in utilities.\nPerf: Pure functions, no I/O.\nAssumptions: Minimal dependencies; tested in isolation."
+    ],
+    [
+      14,
+      40,
+      "component",
+      "OpenAI Client",
+      "Responsibility: Adapter for OpenAI API - chat completions, streaming, token usage.\nInputs: Model name, messages, system prompt, streaming flag.\nOutputs: Assistant message (stream or complete), token usage (prompt_tokens, completion_tokens).\nFailure modes: API key invalid -> 500; rate limit -> 429; timeout -> 504.\nSecurity: API key from secrets, never logged.\nPerf: Async client (httpx or openai SDK async), connection pooling, timeout 30s.\nAssumptions: openai Python SDK; streaming via async iterator."
+    ],
+    [
+      26,
+      40,
+      "component",
+      "Anthropic Client",
+      "Responsibility: Adapter for Anthropic API - messages endpoint, streaming, token usage.\nInputs: Model name, messages, system prompt, streaming flag.\nOutputs: Assistant message (stream or complete), token usage.\nFailure modes: Same as OpenAI Client.\nSecurity: API key from secrets.\nPerf: Async client, timeout 30s.\nAssumptions: anthropic Python SDK; similar interface to OpenAI adapter for swappability."
+    ],
+    [
+      56,
+      40,
+      "interface",
+      "LLM Provider Contract",
+      "Protocol: HTTPS REST (provider-specific)\nOperations: send_message(model, messages, system_prompt, stream) -> AsyncIterator[str] | str, get_usage() -> TokenUsage\nAuth: API key in header (provider-specific)\nIdempotency: Not guaranteed by providers (chat is non-idempotent)\nVersioning: Provider API versions pinned in client config\nErrors: 401 (invalid key), 429 (rate limit), 500 (provider error), 504 (timeout)\nAssumptions: Adapters implement common interface; factory selects adapter by provider name."
+    ],
+    [
+      67,
+      40,
+      "component",
+      "JWT Validator",
+      "Responsibility: Validate JWT signature, extract claims (user_id, is_admin), check expiry.\nInputs: JWT string from Authorization header.\nOutputs: Claims dict (user_id, is_admin, exp, iat), raise exception if invalid.\nFailure modes: Expired -> 401; invalid signature -> 401; malformed -> 401.\nSecurity: Verify signature with secret or JWKS; check expiry and nbf.\nPerf: Cache JWKS keys (TTL 1h).\nAssumptions: PyJWT library; HS256 or RS256 algorithm."
+    ],
+    [
+      36,
+      42,
+      "group",
+      "User Roles",
+      "Audience: Product, Support\nPurpose: Define actor types and their permissions.\nScope: End-user, Admin.\nChecklist: Role definitions, permission matrix.\nLinks: Usage Model journeys, Cross-cutting.Auth\nAssumptions: Roles encoded in JWT; no role management in this service."
+    ],
+    [
+      5,
+      42,
+      "group",
+      "User Journeys",
+      "Audience: Product, QA\nPurpose: End-to-end user flows.\nScope: Chat with LLM, manage dialogs, admin operations.\nChecklist: Happy paths, error scenarios, token exhaustion.\nLinks: User Roles, System Events, Backend.API Layer\nAssumptions: Frontend client (web/mobile) consumes API; not part of this backend."
+    ],
+    [
+      70,
+      42,
+      "group",
+      "System Events",
+      "Audience: Developers, Ops\nPurpose: Key domain events for observability, auditing, future event-driven features.\nScope: Message sent, tokens deducted, balance exhausted, admin action.\nChecklist: Event definitions, consumers (logs, metrics, future webhooks).\nLinks: User Journeys, Cross-cutting.Observability\nAssumptions: Events logged initially; future: publish to queue for async processing."
+    ],
+    [
+      17,
+      36,
+      "concept",
+      "End User",
+      "Audience: Product, Support\nPurpose: Regular user of chat interface.\nScope: Create dialogs, send messages, view history, check token balance.\nChecklist:\n- Authenticated via external service (JWT with user_id, is_admin=false)\n- Can only access own dialogs\n- Subject to token limits\n- Cannot top-up tokens (external process or admin)\nLinks: User Journeys (Chat with LLM, Manage Dialogs)\nAssumptions: user_id unique across system; no self-registration in this service."
+    ],
+    [
+      68,
+      36,
+      "concept",
+      "Admin",
+      "Audience: Product, Support\nPurpose: Administer users, tokens, view global stats.\nScope: All user operations + manage token limits, top-up tokens, view all dialogs, usage stats.\nChecklist:\n- Authenticated via external service (JWT with is_admin=true)\n- Unrestricted dialog access (for support)\n- Can modify any user's token balance\n- Access to admin-only endpoints\nLinks: User Journeys (Admin: Manage Users, Admin: Token Operations, Admin: View Stats)\nAssumptions: Admin flag in JWT; no separate admin user table."
+    ],
+    [
+      62,
+      5,
+      "process",
+      "Chat with LLM",
+      "Goal: User sends message in dialog, receives LLM response, tokens deducted.\nTrigger: POST /dialogs/{id}/messages with user message.\nPreconditions: User authenticated, dialog exists and owned by user, sufficient token balance.\nPostconditions: User message and assistant response saved, tokens deducted, balance updated.\nFailure/Fallback: Insufficient tokens -> 402 Payment Required; LLM timeout -> 504, no tokens deducted; dialog not found -> 404.\nAssumptions: Streaming preferred; fallback to non-streaming if client doesn't support SSE."
+    ],
+    [
+      27,
+      5,
+      "process",
+      "Manage Dialogs",
+      "Goal: User creates, retrieves, lists dialogs with custom settings.\nTrigger: POST /dialogs (create), GET /dialogs (list), GET /dialogs/{id} (retrieve).\nPreconditions: User authenticated.\nPostconditions: Dialog created/retrieved, settings applied.\nFailure/Fallback: Invalid model name -> 400; dialog not found -> 404.\nAssumptions: No delete endpoint in v1 (soft-delete in future if needed)."
+    ],
+    [
+      12,
+      5,
+      "process",
+      "Check Token Balance",
+      "Goal: User views current token balance and usage stats.\nTrigger: GET /users/me/tokens.\nPreconditions: User authenticated.\nPostconditions: Balance and usage returned.\nFailure/Fallback: None (always succeeds for valid user).\nAssumptions: Balance includes pending deductions (or not - clarify in API doc)."
+    ],
+    [
+      35,
+      5,
+      "process",
+      "Admin: Manage Users",
+      "Goal: Admin lists users, views user details, sets token limits.\nTrigger: GET /admin/users, GET /admin/users/{id}, PATCH /admin/users/{id}/limits.\nPreconditions: Admin authenticated (is_admin=true).\nPostconditions: User list/details returned, limits updated.\nFailure/Fallback: Non-admin -> 403; user not found -> 404.\nAssumptions: User creation handled by external auth service; this service only reads user_id from JWT."
+    ],
+    [
+      63,
+      5,
+      "process",
+      "Admin: Token Operations",
+      "Goal: Admin tops up user tokens, adjusts balances, views token transaction history.\nTrigger: POST /admin/users/{id}/tokens (top-up), GET /admin/users/{id}/tokens/history.\nPreconditions: Admin authenticated.\nPostconditions: Balance updated, transaction logged.\nFailure/Fallback: Invalid amount -> 400; user not found -> 404.\nAssumptions: Top-up amount can be negative (deduct tokens); audit log for all changes."
+    ],
+    [
+      13,
+      5,
+      "process",
+      "Admin: View Stats",
+      "Goal: Admin views global usage statistics (total tokens used, active users, top models).\nTrigger: GET /admin/stats.\nPreconditions: Admin authenticated.\nPostconditions: Aggregated stats returned.\nFailure/Fallback: None (empty stats if no data).\nAssumptions: Stats computed on-demand or cached; future: pre-aggregated in background job."
+    ],
+    [
+      73,
+      70,
+      "entity",
+      "Message Sent",
+      "When emitted: After user message appended to dialog, before LLM call.\nPayload: {dialog_id, user_id, message_id, content_length, timestamp}\nConsumers: Observability (log, metric increment), future: analytics pipeline.\nDelivery guarantees: At-least-once (via log, no queue yet).\nAssumptions: Logged synchronously; future: publish to event bus."
+    ],
+    [
+      21,
+      70,
+      "entity",
+      "LLM Response Received",
+      "When emitted: After assistant message streamed/saved, tokens calculated.\nPayload: {dialog_id, user_id, message_id, model, prompt_tokens, completion_tokens, latency_ms, timestamp}\nConsumers: Observability (log, metrics: latency, token usage), Token Controller (deduct tokens).\nDelivery guarantees: At-least-once.\nAssumptions: Emitted even if streaming fails mid-way (partial tokens deducted or none - decide)."
+    ],
+    [
+      10,
+      70,
+      "entity",
+      "Tokens Deducted",
+      "When emitted: After token balance updated post-LLM response.\nPayload: {user_id, amount, new_balance, reason: 'llm_usage', dialog_id, message_id, timestamp}\nConsumers: Observability (audit log), future: billing system.\nDelivery guarantees: At-least-once.\nAssumptions: Logged after DB commit; idempotent (same message_id won't deduct twice)."
+    ],
+    [
+      3,
+      70,
+      "entity",
+      "Balance Exhausted",
+      "When emitted: When token deduction brings balance to"
+    ],
+    [
+      76,
+      70,
+      "entity",
+      "Admin Action",
+      "When emitted: After admin modifies user limits or tops up tokens.\nPayload: {admin_user_id, target_user_id, action: 'top_up'|'set_limit', amount, timestamp}\nConsumers: Observability (audit log), compliance reporting.\nDelivery guarantees: At-least-once.\nAssumptions: All admin actions logged; retention policy for audit logs."
+    ],
+    [
+      44,
+      62,
+      "step",
+      "Validate Request",
+      "Action: API Layer validates JWT, extracts user_id, checks dialog ownership, validates message schema.\nInputs/Outputs: HTTP request -> user_id, dialog_id, message content.\nFailure: 401 if JWT invalid, 403 if dialog not owned, 422 if schema invalid.\nAssumptions: Validation middleware applied before handler."
+    ],
+    [
+      46,
+      62,
+      "step",
+      "Check Token Balance",
+      "Action: Token Controller checks if user balance >= estimated cost.\nInputs/Outputs: user_id, estimated_cost (from model + message length) -> boolean.\nFailure: Insufficient tokens -> emit Balance Exhausted event, return 402.\nAssumptions: Cost estimated upfront; actual cost deducted after response."
+    ],
+    [
+      53,
+      62,
+      "decision",
+      "Sufficient Tokens?",
+      "Condition: balance >= estimated_cost\nBranches:\n- Yes: proceed to Call LLM\n- No: reject request, return 402, emit Balance Exhausted event\nAssumptions: Estimated cost calculated from model pricing and input token count."
+    ],
+    [
+      51,
+      62,
+      "step",
+      "Call LLM",
+      "Action: Integrations component selects provider (OpenAI/Anthropic), sends message, streams response.\nInputs/Outputs: dialog settings (model, system_prompt, agent_config), user message -> assistant message stream.\nFailure: Provider timeout -> 504, provider error -> 500, no tokens deducted.\nAssumptions: Timeout 30s; retry on transient errors (optional)."
+    ],
+    [
+      2,
+      62,
+      "step",
+      "Stream Response",
+      "Action: API Layer streams assistant message chunks to client via SSE.\nInputs/Outputs: LLM response stream -> SSE events.\nFailure: Client disconnect -> log, continue saving message; stream error -> log partial message.\nAssumptions: Buffering minimal; client handles reconnect."
+    ],
+    [
+      11,
+      62,
+      "step",
+      "Save Messages & Deduct Tokens",
+      "Action: Data Access saves user message and assistant message, Token Controller deducts actual tokens, emits events.\nInputs/Outputs: Messages, token usage -> DB commit, updated balance, events (Message Sent, LLM Response Received, Tokens Deducted).\nFailure: DB error -> rollback, return 500, no tokens deducted (or deducted and refunded on rollback).\nAssumptions: Transaction wraps save + deduct; events emitted after commit."
+    ],
+    [
+      19,
+      27,
+      "step",
+      "Create Dialog",
+      "Action: Dialog Manager creates dialog with user_id, settings (model, system_prompt, agent_config), saves to DB.\nInputs/Outputs: user_id, CreateDialogRequest -> dialog entity.\nFailure: Invalid model -> 400; DB error -> 500.\nAssumptions: Default settings applied if not provided."
+    ],
+    [
+      8,
+      27,
+      "step",
+      "Retrieve Dialog",
+      "Action: Dialog Manager fetches dialog by id, verifies ownership (or admin).\nInputs/Outputs: dialog_id, user_id, is_admin -> dialog entity.\nFailure: Not found -> 404; not owned and not admin -> 403.\nAssumptions: Messages loaded lazily (separate endpoint)."
+    ],
+    [
+      45,
+      27,
+      "step",
+      "List Dialogs",
+      "Action: Dialog Manager queries dialogs for user_id, paginates, orders by created_at desc.\nInputs/Outputs: user_id, pagination params -> list of dialog entities.\nFailure: None (empty list if no dialogs).\nAssumptions: Default page size 20; cursor-based pagination in future."
+    ],
+    [
+      69,
+      12,
+      "step",
+      "Fetch Balance",
+      "Action: Token Controller retrieves current balance and usage stats for user_id.\nInputs/Outputs: user_id -> balance, total_used, limit.\nFailure: User not found (new user) -> return default balance (e.g., 0 or initial grant).\nAssumptions: Balance initialized on first request or via admin."
+    ],
+    [
+      66,
+      35,
+      "step",
+      "List Users",
+      "Action: Admin queries all users (user_id from usage logs or dialogs), aggregates stats.\nInputs/Outputs: Pagination params -> list of user_id + stats (dialog count, token usage).\nFailure: None (empty if no users).\nAssumptions: User list derived from activity (no separate user table unless needed)."
+    ],
+    [
+      4,
+      35,
+      "step",
+      "Set Token Limit",
+      "Action: Admin updates per-user token limit, saves to DB, emits Admin Action event.\nInputs/Outputs: user_id, new_limit -> updated limit, event.\nFailure: Invalid limit (negative) -> 400.\nAssumptions: Limit enforced on next request; no retroactive enforcement."
+    ],
+    [
+      43,
+      63,
+      "step",
+      "Top-Up Tokens",
+      "Action: Admin adds tokens to user balance, logs transaction, emits Admin Action event.\nInputs/Outputs: user_id, amount -> updated balance, transaction log, event.\nFailure: Invalid amount -> 400.\nAssumptions: Negative amount allowed for deduction; balance can go negative (or enforce >=0)."
+    ],
+    [
+      29,
+      63,
+      "step",
+      "View Token History",
+      "Action: Admin queries token transaction log for user_id, orders by timestamp desc.\nInputs/Outputs: user_id, pagination -> list of transactions (amount, reason, timestamp).\nFailure: None (empty if no history).\nAssumptions: Retained indefinitely or per retention policy."
+    ],
+    [
+      38,
+      13,
+      "step",
+      "Aggregate Stats",
+      "Action: Query usage logs, dialogs, aggregate by model, user, time period.\nInputs/Outputs: Date range, filters -> {total_tokens, active_users, top_models, avg_latency}.\nFailure: None (empty stats if no data).\nAssumptions: Computed on-demand; cache for 5 min; future: pre-aggregated daily."
+    ],
+    [
+      34,
+      20,
+      "data",
+      "dialogs",
+      "Schema keys: id (PK, UUID), user_id (indexed), title (nullable), system_prompt (text, nullable), model_name (FK to models or string), agent_config (JSONB, nullable), created_at, updated_at\nIndexes: user_id, created_at\nRelations: messages (1:N), user_id references external auth (soft FK, no constraint)\nRetention/PII: user_id is PII (pseudonymized); retain indefinitely or per policy; soft-delete if needed\nMigration notes: Initial migration creates table; add agent_config in v2 if not in v1\nAssumptions: UUID PK for global uniqueness; model_name stored as string (validated at runtime)."
+    ],
+    [
+      28,
+      20,
+      "data",
+      "messages",
+      "Schema keys: id (PK, UUID), dialog_id (FK, indexed), role ('user'|'assistant'), content (text), prompt_tokens (int, nullable), completion_tokens (int, nullable), created_at\nIndexes: dialog_id, created_at\nRelations: dialog (N:1)\nRetention/PII: content is PII; retention policy applies; consider encryption at rest\nMigration notes: Add token columns in v1; partition by created_at if volume high\nAssumptions: No editing of messages (immutable); streaming messages saved incrementally or as final."
+    ],
+    [
+      72,
+      20,
+      "data",
+      "token_balances",
+      "Schema keys: user_id (PK, indexed), balance (int, tokens), limit (int, nullable), updated_at\nIndexes: user_id (PK)\nRelations: None (user_id from JWT)\nRetention/PII: user_id is PII; retain as long as user active\nMigration notes: Initial migration; default balance 0; admin sets initial grant manually\nAssumptions: Balance in smallest unit (e.g., 1 token = 1 unit); limit nullable (no limit if null)."
+    ],
+    [
+      41,
+      20,
+      "data",
+      "token_transactions",
+      "Schema keys: id (PK, serial), user_id (indexed), amount (int, can be negative), reason ('llm_usage'|'admin_top_up'|'admin_deduct'), dialog_id (FK, nullable), message_id (FK, nullable), admin_user_id (nullable), created_at\nIndexes: user_id, created_at\nRelations: dialog, message (nullable FKs)\nRetention/PII: Audit log, retain per compliance (e.g., 7 years); user_id PII\nMigration notes: Partition by created_at monthly if volume high\nAssumptions: Append-only; immutable; unique constraint on (message_id, reason) to prevent double deduction."
+    ],
+    [
+      75,
+      20,
+      "data",
+      "models",
+      "Schema keys: name (PK, string), provider ('openai'|'anthropic'), cost_per_1k_prompt_tokens (decimal), cost_per_1k_completion_tokens (decimal), context_window (int), enabled (boolean), created_at, updated_at\nIndexes: name (PK), provider\nRelations: None\nRetention/PII: No PII; config data\nMigration notes: Seed with initial models (gpt-4, claude-3-opus, etc.); admin can add via migration or config\nAssumptions: Cost in USD or tokens (decide); updated manually or via config sync."
+    ],
+    [
+      74,
+      20,
+      "interface",
+      "Database Schema API",
+      "Protocol: SQL (PostgreSQL wire protocol)\nOperations: CRUD on dialogs, messages, token_balances, token_transactions, models; transactions for atomic updates\nAuth: DB user with least privilege (no DDL in app runtime)\nIdempotency: Inserts idempotent via unique constraints; updates by PK idempotent\nVersioning: Schema versioned via Alembic migrations\nErrors: UniqueViolation (409), ForeignKeyViolation (400), ConnectionError (500)\nAssumptions: Async queries via asyncpg; connection pooling (max 20 conns)."
+    ]
+  ],
+  "o": [
+    [
+      37,
+      [
+        78,
+        30,
+        42
+      ]
+    ],
+    [
+      78,
+      [
+        50,
+        20,
+        55
+      ]
+    ],
+    [
+      30,
+      [
+        25,
+        22,
+        40,
+        6
+      ]
+    ],
+    [
+      42,
+      [
+        36,
+        5,
+        70
+      ]
+    ],
+    [
+      50,
+      [
+        23,
+        33,
+        24,
+        1
+      ]
+    ],
+    [
+      20,
+      [
+        31,
+        48,
+        34,
+        28,
+        72,
+        41,
+        75,
+        74
+      ]
+    ],
+    [
+      55,
+      [
+        16,
+        49,
+        57,
+        9
+      ]
+    ],
+    [
+      25,
+      [
+        52,
+        32,
+        65,
+        15,
+        77
+      ]
+    ],
+    [
+      22,
+      [
+        64,
+        58,
+        60
+      ]
+    ],
+    [
+      40,
+      [
+        14,
+        26,
+        56,
+        67
+      ]
+    ],
+    [
+      6,
+      [
+        71,
+        61,
+        47,
+        59,
+        7,
+        54,
+        39,
+        18
+      ]
+    ],
+    [
+      36,
+      [
+        17,
+        68
+      ]
+    ],
+    [
+      5,
+      [
+        62,
+        27,
+        12,
+        35,
+        63,
+        13
+      ]
+    ],
+    [
+      70,
+      [
+        73,
+        21,
+        10,
+        3,
+        76
+      ]
+    ],
+    [
+      62,
+      [
+        44,
+        46,
+        53,
+        51,
+        2,
+        11
+      ]
+    ],
+    [
+      27,
+      [
+        19,
+        8,
+        45
+      ]
+    ],
+    [
+      12,
+      [
+        69
+      ]
+    ],
+    [
+      35,
+      [
+        66,
+        4
+      ]
+    ],
+    [
+      63,
+      [
+        43,
+        29
+      ]
+    ],
+    [
+      13,
+      [
+        38
+      ]
+    ]
+  ],
+  "e": [
+    [
+      1,
+      14
+    ],
+    [
+      1,
+      26
+    ],
+    [
+      1,
+      67
+    ],
+    [
+      2,
+      23
+    ],
+    [
+      3,
+      16
+    ],
+    [
+      4,
+      24
+    ],
+    [
+      4,
+      76
+    ],
+    [
+      8,
+      52
+    ],
+    [
+      9,
+      20
+    ],
+    [
+      9,
+      50
+    ],
+    [
+      9,
+      55
+    ],
+    [
+      10,
+      16
+    ],
+    [
+      11,
+      24
+    ],
+    [
+      11,
+      65
+    ],
+    [
+      14,
+      56
+    ],
+    [
+      15,
+      24
+    ],
+    [
+      16,
+      20
+    ],
+    [
+      16,
+      50
+    ],
+    [
+      17,
+      12
+    ],
+    [
+      17,
+      27
+    ],
+    [
+      17,
+      62
+    ],
+    [
+      19,
+      52
+    ],
+    [
+      21,
+      16
+    ],
+    [
+      21,
+      65
+    ],
+    [
+      23,
+      33
+    ],
+    [
+      23,
+      47
+    ],
+    [
+      23,
+      61
+    ],
+    [
+      23,
+      71
+    ],
+    [
+      24,
+      28
+    ],
+    [
+      24,
+      31
+    ],
+    [
+      24,
+      34
+    ],
+    [
+      24,
+      41
+    ],
+    [
+      24,
+      48
+    ],
+    [
+      24,
+      72
+    ],
+    [
+      24,
+      75
+    ],
+    [
+      26,
+      56
+    ],
+    [
+      29,
+      24
+    ],
+    [
+      31,
+      74
+    ],
+    [
+      32,
+      1
+    ],
+    [
+      32,
+      21
+    ],
+    [
+      32,
+      24
+    ],
+    [
+      32,
+      65
+    ],
+    [
+      32,
+      73
+    ],
+    [
+      33,
+      1
+    ],
+    [
+      33,
+      15
+    ],
+    [
+      33,
+      24
+    ],
+    [
+      33,
+      32
+    ],
+    [
+      33,
+      52
+    ],
+    [
+      33,
+      65
+    ],
+    [
+      33,
+      77
+    ],
+    [
+      38,
+      24
+    ],
+    [
+      43,
+      65
+    ],
+    [
+      43,
+      76
+    ],
+    [
+      44,
+      23
+    ],
+    [
+      45,
+      52
+    ],
+    [
+      46,
+      65
+    ],
+    [
+      51,
+      1
+    ],
+    [
+      52,
+      24
+    ],
+    [
+      53,
+      46
+    ],
+    [
+      65,
+      3
+    ],
+    [
+      65,
+      10
+    ],
+    [
+      65,
+      24
+    ],
+    [
+      66,
+      24
+    ],
+    [
+      68,
+      13
+    ],
+    [
+      68,
+      35
+    ],
+    [
+      68,
+      63
+    ],
+    [
+      69,
+      65
+    ],
+    [
+      71,
+      23
+    ],
+    [
+      73,
+      16
+    ],
+    [
+      76,
+      16
+    ],
+    [
+      77,
+      24
+    ]
+  ]
+}
