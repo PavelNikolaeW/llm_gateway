@@ -610,6 +610,10 @@ class JWTAuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(
         self, request: Request, call_next: RequestResponseEndpoint
     ) -> Response:
+        # Skip auth for CORS preflight requests
+        if request.method == "OPTIONS":
+            return await call_next(request)
+
         # Skip auth for public paths
         if request.url.path in self.PUBLIC_PATHS:
             return await call_next(request)
