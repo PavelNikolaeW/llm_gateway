@@ -1,5 +1,26 @@
 # Claude Code Rules
 
+## Git Workflow
+
+**IMPORTANT: Разработка ведётся в отдельных ветках!**
+
+1. **Создай ветку** для задачи:
+   ```bash
+   git checkout -b feature/название-задачи
+   # или
+   git checkout -b fix/описание-бага
+   ```
+
+2. **Работай в своей ветке** — никогда не коммить напрямую в `main`
+
+3. **После завершения задачи** создай Pull Request:
+   ```bash
+   git push -u origin feature/название-задачи
+   gh pr create --title "Описание" --body "Детали изменений"
+   ```
+
+4. **Дождись ревью** от Claude Code Action перед мержем
+
 ## Before Committing
 
 **ALWAYS run all tests before making a commit:**
@@ -21,10 +42,12 @@ pytest tests/ -v --tb=short
 
 ## Workflow
 
-1. Read the pack requirements
-2. Implement the feature
-3. Write unit tests
-4. Write integration tests
-5. Run ALL tests: `pytest tests/`
-6. Fix any failures
-7. Commit only when all tests pass
+1. Create a feature branch
+2. Read the pack requirements
+3. Implement the feature
+4. Write unit tests
+5. Write integration tests
+6. Run ALL tests: `pytest tests/`
+7. Fix any failures
+8. Commit only when all tests pass
+9. Push and create a Pull Request
