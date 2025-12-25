@@ -38,8 +38,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 # Copy application code
 COPY src/ ./src/
-COPY alembic/ ./alembic/ 2>/dev/null || true
-COPY alembic.ini ./alembic.ini 2>/dev/null || true
+COPY alembic.ini ./alembic.ini
 
 # Set ownership
 RUN chown -R app:app /app
