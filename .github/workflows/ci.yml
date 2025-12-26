@@ -94,7 +94,8 @@ jobs:
           REDIS_URL: redis://localhost:6379/0
           DJANGO_SECRET_KEY: test-secret-key-for-ci-pipeline-32chars
           JWT_SECRET: test-jwt-secret-key-for-ci-32chars
-          ENVIRONMENT: testing
+          AUTH_VERIFY_URL: http://localhost:8000/api/auth/verify
+          ENVIRONMENT: test
         run: |
           pytest tests/ -v --tb=short --cov=src --cov-report=xml --cov-report=html
 
