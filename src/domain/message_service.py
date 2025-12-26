@@ -18,7 +18,7 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.data.models import Dialog, Message
+from src.data.models import Dialog
 from src.data.repositories import DialogRepository, MessageRepository
 from src.domain.token_service import TokenService
 from src.shared.exceptions import (

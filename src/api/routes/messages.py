@@ -18,7 +18,7 @@ from src.api.dependencies import (
     MessageServiceDep,
 )
 from src.domain.message_service import MessageService
-from src.shared.schemas import MessageCreate, MessageResponse, StreamChunk
+from src.shared.schemas import MessageCreate, MessageResponse
 
 logger = logging.getLogger(__name__)
 

@@ -16,7 +16,6 @@ from src.api.dependencies import (
 from src.data.models import Dialog, Message
 from src.shared.schemas import (
     DialogExport,
-    DialogImport,
     ExportResponse,
     ImportRequest,
     ImportResult,

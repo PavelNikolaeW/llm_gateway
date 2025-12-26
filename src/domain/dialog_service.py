@@ -4,7 +4,6 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.data.models import Dialog
 from src.data.repositories import DialogRepository
 from src.domain.model_registry import ModelRegistry
 from src.shared.exceptions import ForbiddenError, NotFoundError, ValidationError

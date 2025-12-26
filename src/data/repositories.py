@@ -404,7 +404,7 @@ class ModelRepository(BaseRepository[Model]):
 
     async def get_enabled_models(self, session: AsyncSession) -> list[Model]:
         """Get all enabled models."""
-        result = await session.execute(select(Model).where(Model.enabled == True))
+        result = await session.execute(select(Model).where(Model.enabled.is_(True)))
         return list(result.scalars().all())
 
     async def get_by_provider(
@@ -413,6 +413,6 @@ class ModelRepository(BaseRepository[Model]):
         """Get models by provider."""
         query = select(Model).where(Model.provider == provider)
         if enabled_only:
-            query = query.where(Model.enabled == True)
+            query = query.where(Model.enabled.is_(True))
         result = await session.execute(query)
         return list(result.scalars().all())
