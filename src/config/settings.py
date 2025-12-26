@@ -114,6 +114,12 @@ class Settings(BaseSettings):
     rate_limit_requests: int = Field(default=100, ge=1, description="Requests per window")
     rate_limit_window: int = Field(default=60, ge=1, description="Rate limit window in seconds")
 
+    # Admin Panel
+    backend_auth_url: str = Field(
+        default="http://localhost:8000/api/v1/login/",
+        description="omnimap-back login endpoint for admin authentication",
+    )
+
     # Validation limits
     max_content_length: int = Field(
         default=100000,
