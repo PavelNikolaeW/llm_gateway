@@ -1,4 +1,5 @@
 """Base repository with common CRUD operations."""
+
 from typing import Any, Generic, TypeVar
 from uuid import UUID
 
@@ -41,9 +42,7 @@ class BaseRepository(Generic[ModelType]):
         await session.refresh(instance)
         return instance
 
-    async def update(
-        self, session: AsyncSession, instance: ModelType, **kwargs: Any
-    ) -> ModelType:
+    async def update(self, session: AsyncSession, instance: ModelType, **kwargs: Any) -> ModelType:
         """Update existing entity."""
         for key, value in kwargs.items():
             setattr(instance, key, value)

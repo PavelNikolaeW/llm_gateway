@@ -1,4 +1,5 @@
 """Specialized repositories for each model with custom query methods."""
+
 from datetime import datetime
 from uuid import UUID
 
@@ -98,9 +99,7 @@ class MessageRepository(BaseRepository[Message]):
         self, session: AsyncSession, dialog_id: UUID, content: str
     ) -> Message:
         """Create a user message."""
-        return await self.create(
-            session, dialog_id=dialog_id, role="user", content=content
-        )
+        return await self.create(session, dialog_id=dialog_id, role="user", content=content)
 
     async def create_assistant_message(
         self,
@@ -200,9 +199,7 @@ class TokenBalanceRepository(BaseRepository[TokenBalance]):
             balance = await self.create(session, user_id=user_id, balance=initial_balance)
         return balance
 
-    async def deduct_tokens(
-        self, session: AsyncSession, user_id: int, amount: int
-    ) -> TokenBalance:
+    async def deduct_tokens(self, session: AsyncSession, user_id: int, amount: int) -> TokenBalance:
         """Deduct tokens from user balance (atomic operation).
 
         Raises ValueError if insufficient balance.
@@ -210,9 +207,7 @@ class TokenBalanceRepository(BaseRepository[TokenBalance]):
         """
         balance = await self.get_or_create(session, user_id)
         if balance.balance < amount:
-            raise ValueError(
-                f"Insufficient tokens: balance={balance.balance}, required={amount}"
-            )
+            raise ValueError(f"Insufficient tokens: balance={balance.balance}, required={amount}")
         balance.balance -= amount
         balance.updated_at = datetime.utcnow()
         await session.flush()
@@ -271,18 +266,13 @@ class TokenBalanceRepository(BaseRepository[TokenBalance]):
         Returns users ordered by user_id.
         """
         result = await session.execute(
-            select(TokenBalance)
-            .order_by(TokenBalance.user_id)
-            .offset(skip)
-            .limit(limit)
+            select(TokenBalance).order_by(TokenBalance.user_id).offset(skip).limit(limit)
         )
         return list(result.scalars().all())
 
     async def count_all_users(self, session: AsyncSession) -> int:
         """Count total users with token balances."""
-        result = await session.execute(
-            select(func.count(TokenBalance.user_id))
-        )
+        result = await session.execute(select(func.count(TokenBalance.user_id)))
         return int(result.scalar() or 0)
 
 

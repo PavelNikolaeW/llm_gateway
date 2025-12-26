@@ -6,6 +6,7 @@ Provides:
 - Request correlation ID propagation
 - Consistent log format across the application
 """
+
 import logging
 import logging.config
 import sys
@@ -73,7 +74,7 @@ class ConsoleFormatter(logging.Formatter):
 
     LEVEL_COLORS = {
         "DEBUG": "\033[36m",  # Cyan
-        "INFO": "\033[32m",   # Green
+        "INFO": "\033[32m",  # Green
         "WARNING": "\033[33m",  # Yellow
         "ERROR": "\033[31m",  # Red
         "CRITICAL": "\033[35m",  # Magenta

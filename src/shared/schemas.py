@@ -1,4 +1,5 @@
 """Pydantic schemas for DTOs."""
+
 from datetime import datetime
 from typing import Any
 from uuid import UUID
@@ -140,11 +141,17 @@ class AgentConfig(BaseModel):
     Configurable parameters for LLM behavior.
     """
 
-    temperature: float | None = Field(None, ge=0.0, le=1.0, description="Sampling temperature (0-1)")
+    temperature: float | None = Field(
+        None, ge=0.0, le=1.0, description="Sampling temperature (0-1)"
+    )
     max_tokens: int | None = Field(None, gt=0, description="Maximum tokens to generate")
     top_p: float | None = Field(None, ge=0.0, le=1.0, description="Top-p sampling (0-1)")
-    presence_penalty: float | None = Field(None, ge=-2.0, le=2.0, description="Presence penalty (-2 to 2)")
-    frequency_penalty: float | None = Field(None, ge=-2.0, le=2.0, description="Frequency penalty (-2 to 2)")
+    presence_penalty: float | None = Field(
+        None, ge=-2.0, le=2.0, description="Presence penalty (-2 to 2)"
+    )
+    frequency_penalty: float | None = Field(
+        None, ge=-2.0, le=2.0, description="Frequency penalty (-2 to 2)"
+    )
     stop_sequences: list[str] | None = Field(None, description="Stop sequences")
 
 

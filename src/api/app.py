@@ -8,6 +8,7 @@ Configures the FastAPI application with:
 - Health check endpoint
 - Model registry initialization
 """
+
 import time
 import uuid
 from collections.abc import AsyncGenerator
@@ -21,7 +22,15 @@ from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 
 from src.api.rate_limiter import rate_limiter
-from src.api.routes import admin_router, audit_router, dialogs_router, export_router, messages_router, models_router, tokens_router
+from src.api.routes import (
+    admin_router,
+    audit_router,
+    dialogs_router,
+    export_router,
+    messages_router,
+    models_router,
+    tokens_router,
+)
 from src.config.logging import configure_logging, get_logger
 from src.config.settings import settings
 from src.data.database import get_session_maker
@@ -253,9 +262,7 @@ def _configure_exception_handlers(app: FastAPI) -> None:
         return _create_error_response(exc, 500, request)
 
     @app.exception_handler(ApplicationError)
-    async def application_error_handler(
-        request: Request, exc: ApplicationError
-    ) -> JSONResponse:
+    async def application_error_handler(request: Request, exc: ApplicationError) -> JSONResponse:
         return _create_error_response(exc, exc.status_code, request)
 
     @app.exception_handler(Exception)
@@ -284,6 +291,7 @@ def _configure_exception_handlers(app: FastAPI) -> None:
 
         if settings.debug:
             import traceback
+
             content["details"] = {
                 "exception": str(exc),
                 "traceback": traceback.format_exc(),
@@ -413,9 +421,7 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
     - Prometheus metrics
     """
 
-    async def dispatch(
-        self, request: Request, call_next: RequestResponseEndpoint
-    ) -> Response:
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         # Generate request ID
         req_id = str(uuid.uuid4())
         request_id_ctx.set(req_id)
@@ -510,9 +516,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     EXCLUDED_PATHS = {"/health", "/metrics", "/docs", "/redoc", "/openapi.json"}
     EXCLUDED_PREFIXES = ("/health", "/metrics", "/docs", "/redoc")
 
-    async def dispatch(
-        self, request: Request, call_next: RequestResponseEndpoint
-    ) -> Response:
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         # Skip rate limiting for excluded paths
         if request.url.path in self.EXCLUDED_PATHS:
             return await call_next(request)
@@ -606,9 +610,7 @@ class JWTAuthMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
         self._validator = JWTValidator()
 
-    async def dispatch(
-        self, request: Request, call_next: RequestResponseEndpoint
-    ) -> Response:
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         # Skip auth for CORS preflight requests
         if request.method == "OPTIONS":
             return await call_next(request)

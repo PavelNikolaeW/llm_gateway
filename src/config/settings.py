@@ -6,6 +6,7 @@ Provides environment-based configuration with validation:
 - Validates configuration values
 - Type-safe access to settings
 """
+
 from enum import Enum
 from functools import lru_cache
 from typing import Literal
@@ -56,7 +57,9 @@ class Settings(BaseSettings):
 
     # Authentication
     auth_verify_url: str = Field(..., description="URL for auth verification")
-    django_secret_key: str = Field(..., min_length=32, description="Django secret key (min 32 chars)")
+    django_secret_key: str = Field(
+        ..., min_length=32, description="Django secret key (min 32 chars)"
+    )
     jwt_token: str | None = Field(default=None, description="Static JWT token for testing")
 
     # JWT Validation
@@ -78,12 +81,20 @@ class Settings(BaseSettings):
     # LLM Providers
     openai_api_key: str | None = Field(default=None, description="OpenAI API key")
     openai_org_id: str | None = Field(default=None, description="OpenAI organization ID")
-    openai_base_url: str | None = Field(default=None, description="OpenAI API base URL (for proxies)")
+    openai_base_url: str | None = Field(
+        default=None, description="OpenAI API base URL (for proxies)"
+    )
     anthropic_api_key: str | None = Field(default=None, description="Anthropic API key")
     anthropic_base_url: str | None = Field(default=None, description="Anthropic API base URL")
+    gigachat_auth_key: str | None = Field(
+        default=None, description="GigaChat authorization key (base64)"
+    )
+    gigachat_scope: str = Field(default="GIGACHAT_API_PERS", description="GigaChat API scope")
 
     # LLM Request Configuration
-    llm_timeout: int = Field(default=120, ge=1, le=600, description="LLM request timeout in seconds")
+    llm_timeout: int = Field(
+        default=120, ge=1, le=600, description="LLM request timeout in seconds"
+    )
     llm_max_retries: int = Field(default=3, ge=0, le=10, description="Max retries for LLM requests")
     llm_default_model: str = Field(default="gpt-4", description="Default LLM model")
 

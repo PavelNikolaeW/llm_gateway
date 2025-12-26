@@ -3,6 +3,7 @@
 Implements per-user rate limiting with configurable requests per window.
 Falls back to allowing requests if Redis is unavailable.
 """
+
 import logging
 import time
 from dataclasses import dataclass
@@ -99,9 +100,7 @@ class RateLimiter:
                 window=self.window_seconds,
             )
 
-    async def _check_with_redis(
-        self, redis: Redis, identifier: str
-    ) -> RateLimitResult:
+    async def _check_with_redis(self, redis: Redis, identifier: str) -> RateLimitResult:
         """Perform rate limit check using Redis.
 
         Uses sliding window with sorted set.

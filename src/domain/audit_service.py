@@ -2,6 +2,7 @@
 
 Provides functionality for logging and querying audit events.
 """
+
 import logging
 from datetime import datetime
 from typing import Any

@@ -8,6 +8,7 @@ Security:
     - Secret keys from environment variables, never logged
     - JWKS keys cached for 1 hour to reduce load on auth server
 """
+
 import logging
 import time
 from dataclasses import dataclass

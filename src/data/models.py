@@ -1,4 +1,5 @@
 """SQLAlchemy ORM models for database tables."""
+
 import uuid
 from datetime import datetime
 
@@ -85,9 +86,7 @@ class TokenTransaction(Base):
     """Token transaction entity - audit log for all token changes."""
 
     __tablename__ = "token_transactions"
-    __table_args__ = (
-        UniqueConstraint("message_id", "reason", name="uq_message_reason"),
-    )
+    __table_args__ = (UniqueConstraint("message_id", "reason", name="uq_message_reason"),)
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(BigInteger, index=True, nullable=False)

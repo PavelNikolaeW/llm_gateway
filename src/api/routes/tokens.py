@@ -3,6 +3,7 @@
 Endpoints:
 - GET /users/me/tokens - Get current user's token balance and usage
 """
+
 import logging
 
 from fastapi import APIRouter

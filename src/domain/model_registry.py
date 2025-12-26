@@ -10,6 +10,7 @@ Reload on SIGHUP (v1 documentation):
 
     Or config file watching using watchdog or similar libraries.
 """
+
 import logging
 from typing import Dict
 

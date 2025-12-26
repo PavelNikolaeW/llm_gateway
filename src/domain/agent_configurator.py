@@ -9,6 +9,7 @@ Merge Strategy (documented):
     This allows users to override agent presets while still benefiting
     from sensible defaults.
 """
+
 import logging
 from typing import Any
 
@@ -124,9 +125,7 @@ class AgentConfigurator:
         # Validate top_p range (0-1)
         if config.top_p is not None:
             if not 0 <= config.top_p <= 1:
-                raise ValidationError(
-                    f"Invalid top_p {config.top_p}. Must be between 0 and 1."
-                )
+                raise ValidationError(f"Invalid top_p {config.top_p}. Must be between 0 and 1.")
 
         # Validate presence_penalty range (-2 to 2)
         if config.presence_penalty is not None:

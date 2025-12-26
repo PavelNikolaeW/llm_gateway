@@ -1,4 +1,5 @@
 """Token Service - business logic for token accounting."""
+
 import logging
 from datetime import datetime, timezone
 from typing import Callable
@@ -50,9 +51,7 @@ class TokenService:
             except Exception as e:
                 logger.error(f"Event handler error: {e}")
 
-    async def check_balance(
-        self, session: AsyncSession, user_id: int, estimated_cost: int
-    ) -> bool:
+    async def check_balance(self, session: AsyncSession, user_id: int, estimated_cost: int) -> bool:
         """Check if user has sufficient balance for estimated cost.
 
         Args:
@@ -88,9 +87,7 @@ class TokenService:
 
         return has_sufficient
 
-    async def get_balance(
-        self, session: AsyncSession, user_id: int
-    ) -> TokenBalanceResponse:
+    async def get_balance(self, session: AsyncSession, user_id: int) -> TokenBalanceResponse:
         """Get current token balance for user.
 
         Args:
@@ -103,9 +100,7 @@ class TokenService:
         balance = await self.balance_repo.get_or_create(session, user_id)
         return TokenBalanceResponse.model_validate(balance)
 
-    async def get_token_stats(
-        self, session: AsyncSession, user_id: int
-    ) -> TokenStatsResponse:
+    async def get_token_stats(self, session: AsyncSession, user_id: int) -> TokenStatsResponse:
         """Get token stats for user including total usage.
 
         Args:

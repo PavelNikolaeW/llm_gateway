@@ -7,6 +7,7 @@ Security:
     - API key from environment variable ANTHROPIC_API_KEY
     - API key is never logged
 """
+
 import logging
 from collections.abc import AsyncGenerator
 from dataclasses import dataclass

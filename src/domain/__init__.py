@@ -1,4 +1,5 @@
 """Domain layer - business logic and model registry."""
+
 from src.domain.agent_configurator import AgentConfigurator, agent_configurator
 from src.domain.dialog_service import DialogService
 from src.domain.message_service import MessageService

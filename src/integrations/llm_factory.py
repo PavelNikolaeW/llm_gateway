@@ -3,11 +3,13 @@
 Factory pattern implementation for selecting the appropriate LLM provider
 adapter (OpenAI or Anthropic) based on provider name or model metadata.
 """
+
 import logging
 from typing import Protocol, Any
 from collections.abc import AsyncGenerator
 
 from src.integrations.anthropic_client import AnthropicProvider
+from src.integrations.gigachat_client import GigaChatProvider
 from src.integrations.openai_client import OpenAIProvider
 from src.shared.exceptions import LLMError
 
@@ -68,7 +70,7 @@ class LLMProviderContract(Protocol):
 
 
 # Supported providers
-SUPPORTED_PROVIDERS = {"openai", "anthropic"}
+SUPPORTED_PROVIDERS = {"openai", "anthropic", "gigachat"}
 
 
 class LLMProviderFactory:
@@ -97,8 +99,7 @@ class LLMProviderFactory:
             available = ", ".join(sorted(SUPPORTED_PROVIDERS))
             logger.error(f"Unknown LLM provider: {provider_name}")
             raise LLMError(
-                f"Unknown LLM provider '{provider_name}'. "
-                f"Supported providers: {available}"
+                f"Unknown LLM provider '{provider_name}'. Supported providers: {available}"
             )
 
         try:
@@ -106,6 +107,8 @@ class LLMProviderFactory:
                 return OpenAIProvider()
             elif provider_name == "anthropic":
                 return AnthropicProvider()
+            elif provider_name == "gigachat":
+                return GigaChatProvider()
             else:
                 # This shouldn't happen due to the check above
                 raise LLMError(f"Unsupported provider: {provider_name}")

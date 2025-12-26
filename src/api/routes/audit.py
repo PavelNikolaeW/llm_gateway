@@ -3,6 +3,7 @@
 Endpoints:
 - GET /admin/audit - Get audit logs (admin only)
 """
+
 import logging
 from datetime import date, datetime, timezone
 

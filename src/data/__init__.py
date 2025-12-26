@@ -1,4 +1,5 @@
 """Data access layer - database, models, repositories, and cache."""
+
 from src.data.cache import CacheService, cache_service, close_redis, get_redis
 from src.data.database import (
     close_engine,

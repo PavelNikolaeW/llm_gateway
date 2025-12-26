@@ -1,4 +1,5 @@
 """Admin Service - business logic for admin operations."""
+
 import logging
 from datetime import datetime, timezone
 from typing import Callable
@@ -188,9 +189,7 @@ class AdminService:
         )
         self._emit_event(event)
 
-        logger.info(
-            f"Admin {admin_user_id} set limit for user {user_id}: limit={limit}"
-        )
+        logger.info(f"Admin {admin_user_id} set limit for user {user_id}: limit={limit}")
 
         return TokenBalanceResponse.model_validate(updated_balance)
 
@@ -334,10 +333,7 @@ class AdminService:
         top_models_data = await self.dialog_repo.get_top_models_in_range(
             session, start_date, end_date, limit=5
         )
-        top_models = [
-            ModelUsageStats(model=model, usage=usage)
-            for model, usage in top_models_data
-        ]
+        top_models = [ModelUsageStats(model=model, usage=usage) for model, usage in top_models_data]
 
         # Average latency - not currently tracked in database
         # Could be added by storing latency in messages table

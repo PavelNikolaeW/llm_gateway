@@ -4,6 +4,7 @@ Endpoints:
 - POST /dialogs/{dialog_id}/messages - Send message and stream LLM response
 - GET /dialogs/{dialog_id}/messages - Get message history
 """
+
 import logging
 from typing import AsyncGenerator
 from uuid import UUID

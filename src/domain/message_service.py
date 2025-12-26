@@ -9,6 +9,7 @@ Implements the complete message handling flow:
 6. Deduct tokens
 7. Emit events
 """
+
 import logging
 import time
 from collections.abc import AsyncGenerator
@@ -224,9 +225,7 @@ class MessageService:
             )
 
         # Save user message
-        user_message = await self.message_repo.create_user_message(
-            session, dialog.id, data.content
-        )
+        user_message = await self.message_repo.create_user_message(session, dialog.id, data.content)
         await session.flush()
 
         # Emit Message Sent event
@@ -370,9 +369,7 @@ class MessageService:
             )
 
         # Save user message
-        user_message = await self.message_repo.create_user_message(
-            session, dialog.id, data.content
-        )
+        user_message = await self.message_repo.create_user_message(session, dialog.id, data.content)
         await session.flush()
 
         # Emit Message Sent event

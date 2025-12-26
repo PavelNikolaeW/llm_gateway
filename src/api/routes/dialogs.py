@@ -5,6 +5,7 @@ Endpoints:
 - GET /dialogs - List user's dialogs
 - GET /dialogs/{dialog_id} - Get dialog by ID
 """
+
 import logging
 from uuid import UUID
 

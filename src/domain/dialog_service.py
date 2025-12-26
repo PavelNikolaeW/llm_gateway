@@ -1,4 +1,5 @@
 """Dialog Service - business logic for dialog management."""
+
 import logging
 from uuid import UUID
 
@@ -45,8 +46,7 @@ class DialogService:
         if not self.model_registry.model_exists(model_name):
             available = [m.name for m in self.model_registry.get_all_models()]
             raise ValidationError(
-                f"Invalid model_name '{model_name}'. "
-                f"Available models: {', '.join(available)}"
+                f"Invalid model_name '{model_name}'. Available models: {', '.join(available)}"
             )
 
     async def create_dialog(
@@ -140,7 +140,10 @@ class DialogService:
 
         # Get dialogs
         dialogs = await self.dialog_repo.get_by_user(
-            session, user_id=user_id, skip=skip, limit=page_size + 1  # +1 to check has_next
+            session,
+            user_id=user_id,
+            skip=skip,
+            limit=page_size + 1,  # +1 to check has_next
         )
 
         # Check if there are more pages

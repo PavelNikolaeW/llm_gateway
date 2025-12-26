@@ -6,6 +6,7 @@ Provides:
 - LLM request metrics
 - Business metrics (dialogs, messages)
 """
+
 from prometheus_client import Counter, Histogram, Gauge, Info
 
 # Application info

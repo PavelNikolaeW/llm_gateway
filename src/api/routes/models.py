@@ -1,4 +1,5 @@
 """Models API routes - list available LLM models."""
+
 from fastapi import APIRouter
 
 from src.domain.model_registry import model_registry

@@ -5,6 +5,7 @@ Provides:
 - Current user dependency (from JWT)
 - Service dependencies
 """
+
 from typing import Annotated, AsyncGenerator
 
 from fastapi import Depends, Request
