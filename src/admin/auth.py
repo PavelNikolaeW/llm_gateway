@@ -9,7 +9,7 @@ from pathlib import Path
 import httpx
 from sqladmin.authentication import AuthenticationBackend
 from starlette.requests import Request
-from starlette.responses import HTMLResponse, JSONResponse, Response
+from starlette.responses import RedirectResponse
 
 from src.config.logging import get_logger
 from src.config.settings import settings
@@ -31,43 +31,19 @@ class JWTAdminAuth(AuthenticationBackend):
     def __init__(self, secret_key: str):
         super().__init__(secret_key)
         self._validator = JWTValidator()
-        self._login_template = self._load_login_template()
 
-    def _load_login_template(self) -> str:
-        """Load login template from file."""
-        template_path = TEMPLATES_DIR / "login.html"
-        if template_path.exists():
-            return template_path.read_text()
-        # Fallback to simple template
-        return """
-        <html>
-        <body>
-            <h1>LLM Gateway Admin Login</h1>
-            <form method="POST">
-                <input type="text" name="username" placeholder="Username" required><br>
-                <input type="password" name="password" placeholder="Password" required><br>
-                <button type="submit">Login</button>
-            </form>
-        </body>
-        </html>
+    async def login(self, request: Request) -> bool:
+        """Handle login form submission.
+
+        SQLAdmin calls this with POST form data containing username/password.
+        We authenticate via omnimap-back and store JWT in session.
         """
-
-    async def login(self, request: Request) -> Response:
-        """Handle login - show form or process credentials.
-
-        GET: Render login form
-        POST: Authenticate via omnimap-back and store JWT in session
-        """
-        if request.method == "GET":
-            return HTMLResponse(self._login_template)
-
-        # POST - process login
         form = await request.form()
         username = form.get("username", "")
         password = form.get("password", "")
 
         if not username or not password:
-            return JSONResponse({"success": False, "error": "Username and password required"})
+            return False
 
         try:
             # Authenticate via omnimap-back
@@ -78,8 +54,11 @@ class JWTAdminAuth(AuthenticationBackend):
                 )
 
             if response.status_code != 200:
-                logger.warning(f"Backend auth failed with status {response.status_code}")
-                return JSONResponse({"success": False, "error": "Invalid credentials"})
+                logger.warning(
+                    f"Backend auth failed with status {response.status_code}",
+                    extra={"username": username},
+                )
+                return False
 
             data = response.json()
             access_token = data.get("access")
@@ -87,14 +66,15 @@ class JWTAdminAuth(AuthenticationBackend):
             user_id = data.get("user_id")
 
             if not access_token:
-                return JSONResponse({"success": False, "error": "No token received"})
+                logger.warning("No token received from backend", extra={"username": username})
+                return False
 
             if not is_staff:
                 logger.warning(
                     "Non-admin user attempted admin panel access",
                     extra={"user_id": user_id, "username": username},
                 )
-                return JSONResponse({"success": False, "error": "Admin access required"})
+                return False
 
             # Store token and user info in session
             request.session["token"] = access_token
@@ -107,17 +87,17 @@ class JWTAdminAuth(AuthenticationBackend):
                 extra={"user_id": user_id, "username": username},
             )
 
-            return JSONResponse({"success": True})
+            return True
 
         except httpx.TimeoutException:
             logger.error("Backend auth timeout")
-            return JSONResponse({"success": False, "error": "Authentication service timeout"})
+            return False
         except httpx.RequestError as e:
             logger.error(f"Backend auth request error: {e}")
-            return JSONResponse({"success": False, "error": "Authentication service unavailable"})
+            return False
         except Exception as e:
             logger.exception(f"Admin login error: {e}")
-            return JSONResponse({"success": False, "error": "Login failed"})
+            return False
 
     async def logout(self, request: Request) -> bool:
         """Handle logout - clear session."""
@@ -127,22 +107,24 @@ class JWTAdminAuth(AuthenticationBackend):
         logger.info("Admin user logged out", extra={"user_id": user_id, "username": username})
         return True
 
-    async def authenticate(self, request: Request) -> bool:
+    async def authenticate(self, request: Request) -> RedirectResponse | bool:
         """Check if current request is authenticated.
 
         Validates token stored in session is still valid.
+        Returns RedirectResponse to login page if not authenticated.
         """
         token = request.session.get("token")
 
         if not token:
-            return False
+            return RedirectResponse(request.url_for("admin:login"), status_code=302)
 
         try:
             auth_header = f"Bearer {token}"
             claims = self._validator.validate(auth_header)
 
             if not claims.is_admin:
-                return False
+                request.session.clear()
+                return RedirectResponse(request.url_for("admin:login"), status_code=302)
 
             # Update session with latest claims
             request.session["user_id"] = claims.user_id
@@ -153,4 +135,4 @@ class JWTAdminAuth(AuthenticationBackend):
         except Exception:
             # Token expired or invalid - clear session
             request.session.clear()
-            return False
+            return RedirectResponse(request.url_for("admin:login"), status_code=302)
