@@ -22,7 +22,7 @@ from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 
 from src.api.rate_limiter import rate_limiter, RateLimitResult
-from src.api.routes import admin_router, audit_router, dialogs_router, export_router, messages_router, tokens_router
+from src.api.routes import admin_router, audit_router, dialogs_router, export_router, messages_router, models_router, tokens_router
 from src.config.logging import configure_logging, get_logger
 from src.config.settings import settings
 from src.data.database import get_session_maker
@@ -400,6 +400,7 @@ def _register_routes(app: FastAPI) -> None:
     app.include_router(dialogs_router, prefix="/api/v1")
     app.include_router(export_router, prefix="/api/v1")
     app.include_router(messages_router, prefix="/api/v1")
+    app.include_router(models_router, prefix="/api/v1")
     app.include_router(tokens_router, prefix="/api/v1")
 
 
