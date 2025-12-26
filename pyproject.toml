@@ -31,6 +31,10 @@ dependencies = [
     "pyjwt>=2.8.0",
     "cryptography>=42.0.0",
 
+    # Admin Panel
+    "sqladmin>=0.20.0",
+    "itsdangerous>=2.1.0",
+
     # HTTP Client
     "httpx>=0.26.0",
 

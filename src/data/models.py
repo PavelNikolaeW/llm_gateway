@@ -141,3 +141,24 @@ class AuditLog(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=datetime.utcnow, nullable=False, index=True
     )
+
+
+class SystemConfig(Base):
+    """System configuration entity - stores encrypted API keys and settings.
+
+    Used to store:
+    - LLM provider API keys (encrypted)
+    - System-wide settings
+    - Feature flags
+    """
+
+    __tablename__ = "system_configs"
+
+    key: Mapped[str] = mapped_column(String(100), primary_key=True)
+    value: Mapped[str] = mapped_column(Text, nullable=False)
+    is_secret: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
+    updated_by: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
