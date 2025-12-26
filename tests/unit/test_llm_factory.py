@@ -115,6 +115,7 @@ class TestLLMProviderFactory:
         """Test is_supported returns True for valid providers."""
         assert LLMProviderFactory.is_supported("openai") is True
         assert LLMProviderFactory.is_supported("anthropic") is True
+        assert LLMProviderFactory.is_supported("gigachat") is True
         assert LLMProviderFactory.is_supported("OPENAI") is True
         assert LLMProviderFactory.is_supported("  Anthropic  ") is True
 
@@ -127,8 +128,8 @@ class TestLLMProviderFactory:
     def test_get_supported_providers(self):
         """Test get_supported_providers returns sorted list."""
         providers = LLMProviderFactory.get_supported_providers()
-        assert providers == ["anthropic", "openai"]
-        assert len(providers) == 2
+        assert providers == ["anthropic", "gigachat", "openai"]
+        assert len(providers) == 3
 
 
 class TestGetLLMProvider:
@@ -165,7 +166,11 @@ class TestSupportedProviders:
 
     def test_supported_providers_count(self):
         """Test SUPPORTED_PROVIDERS has expected count."""
-        assert len(SUPPORTED_PROVIDERS) == 2
+        assert len(SUPPORTED_PROVIDERS) == 3
+
+    def test_supported_providers_contains_gigachat(self):
+        """Test SUPPORTED_PROVIDERS contains 'gigachat'."""
+        assert "gigachat" in SUPPORTED_PROVIDERS
 
 
 class TestLLMProviderContract:
