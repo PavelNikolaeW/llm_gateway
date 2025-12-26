@@ -1,5 +1,7 @@
 """SQLAdmin setup and configuration."""
 
+from pathlib import Path
+
 from fastapi import FastAPI
 from sqladmin import Admin
 from starlette.middleware.sessions import SessionMiddleware
@@ -14,9 +16,12 @@ from src.admin.views import (
     TokenBalanceAdmin,
     TokenTransactionAdmin,
 )
+from src.config.logging import get_logger
 from src.config.settings import settings
 from src.data.database import get_engine
-from src.config.logging import get_logger
+
+# Path to custom templates
+TEMPLATES_DIR = Path(__file__).parent / "templates"
 
 logger = get_logger(__name__)
 
@@ -50,6 +55,7 @@ def setup_admin(app: FastAPI) -> Admin:
         title="LLM Gateway Admin",
         base_url="/admin",
         authentication_backend=authentication_backend,
+        templates_dir=str(TEMPLATES_DIR),
     )
 
     # Register model views
