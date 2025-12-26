@@ -20,6 +20,7 @@ from src.api.dependencies import (
     DbSession,
     IsAdmin,
 )
+from src.domain.model_registry import model_registry
 from src.shared.schemas import (
     GlobalStatsResponse,
     SetLimitRequest,
@@ -287,3 +288,43 @@ async def get_token_history(
         skip=skip,
         limit=limit,
     )
+
+
+@router.post(
+    "/models/reload",
+    summary="Reload model registry",
+    description="Reload all models from database into memory. Use after editing models in admin panel.",
+    responses={
+        403: {"description": "Access denied - admin required"},
+    },
+)
+async def reload_models(
+    session: DbSession,
+    is_admin: IsAdmin,
+) -> dict:
+    """Reload model registry from database.
+
+    This endpoint reloads all models from the database into the in-memory
+    model registry. Use this after adding, editing, or disabling models
+    in the admin panel.
+
+    Args:
+        session: Database session
+        is_admin: Whether caller is admin
+
+    Returns:
+        Success message with model count
+
+    Raises:
+        ForbiddenError: If caller is not admin (403)
+    """
+    await model_registry.load_models(session)
+    models = model_registry.get_all_models()
+
+    logger.info(f"Model registry reloaded: {len(models)} models")
+
+    return {
+        "status": "ok",
+        "message": f"Reloaded {len(models)} models",
+        "models": [m.name for m in models],
+    }

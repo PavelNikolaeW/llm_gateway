@@ -31,6 +31,7 @@ from src.api.routes import (
     models_router,
     tokens_router,
 )
+from src.admin import setup_admin
 from src.config.logging import configure_logging, get_logger
 from src.config.settings import settings
 from src.data.database import get_session_maker
@@ -179,6 +180,9 @@ All errors follow the format:
 
     # Register routes
     _register_routes(app)
+
+    # Setup admin panel (must be after middleware configuration)
+    setup_admin(app)
 
     logger.info("Application started", extra={"debug_mode": settings.debug})
 
@@ -514,7 +518,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     # Paths excluded from rate limiting
     EXCLUDED_PATHS = {"/health", "/metrics", "/docs", "/redoc", "/openapi.json"}
-    EXCLUDED_PREFIXES = ("/health", "/metrics", "/docs", "/redoc")
+    EXCLUDED_PREFIXES = ("/health", "/metrics", "/docs", "/redoc", "/admin")
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         # Skip rate limiting for excluded paths
@@ -603,8 +607,8 @@ class JWTAuthMiddleware(BaseHTTPMiddleware):
 
     # Paths that don't require authentication
     PUBLIC_PATHS = {"/health", "/metrics", "/docs", "/redoc", "/openapi.json"}
-    # Path prefixes that don't require authentication
-    PUBLIC_PREFIXES = ("/health", "/metrics", "/docs", "/redoc")
+    # Path prefixes that don't require authentication (admin has its own auth)
+    PUBLIC_PREFIXES = ("/health", "/metrics", "/docs", "/redoc", "/admin")
 
     def __init__(self, app: FastAPI):
         super().__init__(app)
