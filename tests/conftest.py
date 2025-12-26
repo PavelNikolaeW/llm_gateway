@@ -16,6 +16,28 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from tests.test_models import TestBase
 
+
+@pytest.fixture(autouse=True)
+async def reset_redis_client():
+    """Reset Redis client before each test to avoid event loop issues.
+
+    The global _redis_client in cache.py can hold a reference to a closed
+    event loop, causing 'Event loop is closed' errors in subsequent tests.
+    """
+    # Reset before test
+    import src.data.cache as cache_module
+    cache_module._redis_client = None
+
+    yield
+
+    # Reset after test and close any open connection
+    if cache_module._redis_client is not None:
+        try:
+            await cache_module._redis_client.aclose()
+        except Exception:
+            pass  # Ignore errors during cleanup
+        cache_module._redis_client = None
+
 # Counter for generating unique user IDs across all tests
 _user_id_counter = int(time.time() * 1000) % 1_000_000_000
 
@@ -86,17 +108,27 @@ def database_url():
         _testcontainer_cache["postgres"].stop()
 
 
+# Production tables to truncate for test isolation
+# Note: "models" is not truncated - it's seeded by migrations with LLM model data
+PRODUCTION_TABLES = [
+    "token_transactions",
+    "messages",
+    "dialogs",
+    "token_balances",
+]
+
+
 @pytest.fixture(scope="function")
 async def session() -> AsyncGenerator[AsyncSession, None]:
     """Create a fresh database session for each test.
 
-    - Creates test tables if they don't exist
-    - Uses test tables only (test_dialogs, test_token_balances, etc.)
-    - Truncates test tables before each test for isolation
-    - NEVER touches production tables or api_* tables
+    - Creates test tables AND production tables if they don't exist
+    - Production tables are needed because services use production models
+    - Truncates relevant tables before each test for isolation
     """
     # Use settings database for now (testcontainers requires Docker)
     from src.config.settings import settings
+    from src.data.models import Base as ProductionBase
 
     engine = create_async_engine(
         settings.database_url,
@@ -106,9 +138,11 @@ async def session() -> AsyncGenerator[AsyncSession, None]:
         max_overflow=10,
     )
 
-    # Create test tables if they don't exist
+    # Create both test tables and production tables
+    # Production tables are needed because services import from src.data.models
     async with engine.begin() as conn:
         await conn.run_sync(TestBase.metadata.create_all)
+        await conn.run_sync(ProductionBase.metadata.create_all)
 
     async_session = async_sessionmaker(
         engine,
@@ -117,9 +151,12 @@ async def session() -> AsyncGenerator[AsyncSession, None]:
         autoflush=False,
     )
 
+    # Tables to truncate (both test and production)
+    tables_to_truncate = TEST_TABLES + PRODUCTION_TABLES
+
     async with async_session() as sess:
-        # Truncate test tables before each test (in reverse order due to FK constraints)
-        for table in TEST_TABLES:
+        # Truncate tables before each test (in reverse order due to FK constraints)
+        for table in tables_to_truncate:
             try:
                 await sess.execute(text(f"TRUNCATE TABLE {table} CASCADE"))
             except Exception:
@@ -138,6 +175,7 @@ async def session_no_truncate() -> AsyncGenerator[AsyncSession, None]:
     Use this for tests that need data to persist across multiple operations.
     """
     from src.config.settings import settings
+    from src.data.models import Base as ProductionBase
 
     engine = create_async_engine(
         settings.database_url,
@@ -147,9 +185,10 @@ async def session_no_truncate() -> AsyncGenerator[AsyncSession, None]:
         max_overflow=10,
     )
 
-    # Create test tables if they don't exist
+    # Create both test tables and production tables
     async with engine.begin() as conn:
         await conn.run_sync(TestBase.metadata.create_all)
+        await conn.run_sync(ProductionBase.metadata.create_all)
 
     async_session = async_sessionmaker(
         engine,
