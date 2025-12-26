@@ -13,7 +13,6 @@ import uuid
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from contextvars import ContextVar
-from typing import Any
 
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,14 +20,14 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 
-from src.api.rate_limiter import rate_limiter, RateLimitResult
+from src.api.rate_limiter import rate_limiter
 from src.api.routes import admin_router, audit_router, dialogs_router, export_router, messages_router, models_router, tokens_router
 from src.config.logging import configure_logging, get_logger
 from src.config.settings import settings
 from src.data.database import get_session_maker
 from src.domain.model_registry import model_registry
-from src.integrations.jwt_validator import JWTValidator, JWTClaims
-from src.shared.metrics import record_http_request, record_error
+from src.integrations.jwt_validator import JWTValidator
+from src.shared.metrics import record_http_request
 from src.shared.exceptions import (
     ApplicationError,
     ForbiddenError,
@@ -344,7 +343,7 @@ def _create_error_response(
 
 def _register_routes(app: FastAPI) -> None:
     """Register API routes."""
-    from src.api.health import check_system_health, is_ready, is_alive, HealthStatus
+    from src.api.health import check_system_health, is_ready, is_alive
 
     @app.get("/health")
     async def health_check() -> dict:
@@ -426,7 +425,7 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
 
         # Log request
         logger.info(
-            f"Request started",
+            "Request started",
             extra={
                 "request_id": req_id,
                 "method": request.method,
@@ -455,7 +454,7 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
 
             # Log response
             logger.info(
-                f"Request completed",
+                "Request completed",
                 extra={
                     "request_id": req_id,
                     "method": request.method,
@@ -529,7 +528,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         if not result.allowed:
             logger.warning(
-                f"Rate limit exceeded",
+                "Rate limit exceeded",
                 extra={
                     "request_id": request_id_ctx.get(),
                     "identifier": identifier,
