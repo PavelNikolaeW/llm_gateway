@@ -16,6 +16,28 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from tests.test_models import TestBase
 
+
+@pytest.fixture(autouse=True)
+async def reset_redis_client():
+    """Reset Redis client before each test to avoid event loop issues.
+
+    The global _redis_client in cache.py can hold a reference to a closed
+    event loop, causing 'Event loop is closed' errors in subsequent tests.
+    """
+    # Reset before test
+    import src.data.cache as cache_module
+    cache_module._redis_client = None
+
+    yield
+
+    # Reset after test and close any open connection
+    if cache_module._redis_client is not None:
+        try:
+            await cache_module._redis_client.aclose()
+        except Exception:
+            pass  # Ignore errors during cleanup
+        cache_module._redis_client = None
+
 # Counter for generating unique user IDs across all tests
 _user_id_counter = int(time.time() * 1000) % 1_000_000_000
 
