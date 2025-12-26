@@ -6,7 +6,6 @@ Only users with is_admin=True can access the admin panel.
 
 from sqladmin.authentication import AuthenticationBackend
 from starlette.requests import Request
-from starlette.responses import RedirectResponse
 
 from src.integrations.jwt_validator import JWTValidator
 from src.config.logging import get_logger
@@ -44,8 +43,7 @@ class JWTAdminAuth(AuthenticationBackend):
 
             if not claims.is_admin:
                 logger.warning(
-                    "Non-admin user attempted admin panel access",
-                    extra={"user_id": claims.user_id}
+                    "Non-admin user attempted admin panel access", extra={"user_id": claims.user_id}
                 )
                 return False
 
@@ -54,10 +52,7 @@ class JWTAdminAuth(AuthenticationBackend):
             request.session["user_id"] = claims.user_id
             request.session["is_admin"] = claims.is_admin
 
-            logger.info(
-                "Admin user logged in to admin panel",
-                extra={"user_id": claims.user_id}
-            )
+            logger.info("Admin user logged in to admin panel", extra={"user_id": claims.user_id})
             return True
 
         except Exception as e:
