@@ -114,7 +114,7 @@ jobs:
           pytest tests/ -v --tb=short --cov=src --cov-report=xml --cov-report=html
 
       - name: Upload coverage report
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           file: ./coverage.xml
           fail_ci_if_error: false
