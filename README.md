@@ -134,6 +134,70 @@ Type check:
 mypy src
 ```
 
+## Admin Panel
+
+The service includes a web-based admin panel at `/admin` built with SQLAdmin.
+
+### Features
+
+- **Models Management**: CRUD operations for LLM models with hot reload
+- **Token Balances**: View and edit user token balances and limits
+- **Token Transactions**: Audit log of all token operations (read-only)
+- **Dialogs & Messages**: View and manage conversations
+- **Audit Logs**: System-wide audit trail (read-only)
+- **System Config**: Store API keys and settings (secrets are masked)
+
+### Access
+
+1. Navigate to `http://localhost:8001/admin`
+2. Login using your OmniMap credentials (username/password)
+3. Only users with `is_staff=True` can access the admin panel
+
+### Configuration
+
+Set the authentication endpoint in environment variables:
+
+```bash
+# Default: http://localhost:8000/api/v1/login/
+BACKEND_AUTH_URL=http://api.omnimap.cloud.ru/api/v1/login/
+```
+
+### Hot Reload Models
+
+After editing models in the admin panel, reload the model registry:
+
+```bash
+curl -X POST http://localhost:8001/api/v1/admin/models/reload \
+  -H "Authorization: Bearer $JWT_TOKEN"
+```
+
+Or use the admin panel to make changes and call the reload endpoint.
+
+## API Documentation
+
+When the server is running, API documentation is available at:
+
+- Swagger UI: `http://localhost:8001/docs`
+- ReDoc: `http://localhost:8001/redoc`
+- OpenAPI JSON: `http://localhost:8001/openapi.json`
+
+## Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `SQL_USER` | PostgreSQL username | required |
+| `SQL_PASSWD` | PostgreSQL password | required |
+| `SQL_NAME` | PostgreSQL database name | required |
+| `SQL_HOST` | PostgreSQL host | localhost |
+| `SQL_PORT` | PostgreSQL port | 5432 |
+| `DJANGO_SECRET_KEY` | JWT signing key (shared with omnimap-back) | required |
+| `BACKEND_AUTH_URL` | omnimap-back login endpoint | http://localhost:8000/api/v1/login/ |
+| `OPENAI_API_KEY` | OpenAI API key | optional |
+| `ANTHROPIC_API_KEY` | Anthropic API key | optional |
+| `GIGACHAT_AUTH_KEY` | GigaChat auth key (base64) | optional |
+| `REDIS_URL` | Redis connection URL | optional |
+| `DEBUG` | Enable debug mode | false |
+
 ## Project Status
 
 This project is under active development. Epics are implemented sequentially according to the architecture defined in `snapshot.json`.
