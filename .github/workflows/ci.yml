@@ -92,6 +92,8 @@ jobs:
           SQL_PASSWD: test_password
           SQL_NAME: test_db
           DJANGO_SECRET_KEY: test-secret-key-for-ci-pipeline-32chars
+          JWT_SECRET: test-jwt-secret-key-for-ci-32chars
+          AUTH_VERIFY_URL: http://localhost:8000/api/auth/verify
           ENVIRONMENT: test
         run: |
           alembic upgrade head
