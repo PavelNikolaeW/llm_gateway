@@ -219,6 +219,9 @@ def _configure_middleware(app: FastAPI) -> None:
     # Add JWT auth middleware
     app.add_middleware(JWTAuthMiddleware)
 
+    # Note: SessionMiddleware for /admin is handled internally by SQLAdmin's
+    # AuthenticationBackend, which creates its own Starlette sub-application
+
 
 def _configure_exception_handlers(app: FastAPI) -> None:
     """Configure global exception handlers.
