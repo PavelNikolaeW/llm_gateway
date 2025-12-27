@@ -8,6 +8,8 @@ from pathlib import Path
 
 import httpx
 from sqladmin.authentication import AuthenticationBackend
+from starlette.middleware import Middleware
+from starlette.middleware.sessions import SessionMiddleware
 from starlette.requests import Request
 from starlette.responses import RedirectResponse
 
@@ -29,7 +31,18 @@ class JWTAdminAuth(AuthenticationBackend):
     """
 
     def __init__(self, secret_key: str):
-        super().__init__(secret_key)
+        # Don't call super().__init__() to avoid default SessionMiddleware
+        # We configure SessionMiddleware with custom settings below
+        self.middlewares = [
+            Middleware(
+                SessionMiddleware,
+                secret_key=secret_key,
+                session_cookie="admin_session",
+                max_age=3600,  # 1 hour session
+                same_site="lax",
+                https_only=not settings.debug,
+            ),
+        ]
         self._validator = JWTValidator()
 
     async def login(self, request: Request) -> bool:
