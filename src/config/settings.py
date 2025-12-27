@@ -119,6 +119,10 @@ class Settings(BaseSettings):
         default="http://localhost:8000/api/v1/login/",
         description="omnimap-back login endpoint for admin authentication",
     )
+    backend_users_url: str = Field(
+        default="http://localhost:8000/api/v1/users/",
+        description="omnimap-back users endpoint for admin panel",
+    )
 
     # Validation limits
     max_content_length: int = Field(
