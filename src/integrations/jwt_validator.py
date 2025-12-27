@@ -274,8 +274,8 @@ class JWTValidator:
         except (ValueError, TypeError):
             raise UnauthorizedError("Invalid user_id in token")
 
-        # Extract is_admin (default False if not present)
-        is_admin = raw_claims.get("is_admin", False)
+        # Extract is_admin (check both is_admin and is_staff for compatibility)
+        is_admin = raw_claims.get("is_admin") or raw_claims.get("is_staff", False)
         if isinstance(is_admin, str):
             is_admin = is_admin.lower() in ("true", "1", "yes")
 
