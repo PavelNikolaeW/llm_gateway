@@ -86,11 +86,13 @@ class TokenBalanceAdmin(ModelView, model=TokenBalance):
     ]
     column_default_sort = ("user_id", False)
 
+    # Include user_id in form (it's a primary key but we need to set it manually)
     form_columns = [
         TokenBalance.user_id,
         TokenBalance.balance,
         TokenBalance.limit,
     ]
+    form_include_pk = True  # Show primary key in create/edit forms
 
     column_labels = {
         TokenBalance.user_id: "User ID",
