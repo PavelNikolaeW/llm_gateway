@@ -1,7 +1,10 @@
 """SQLAdmin model views for admin panel."""
 
-from sqladmin import ModelView
+from sqladmin import BaseView, ModelView, expose
+from starlette.requests import Request
+from starlette.responses import Response
 
+from src.admin.backend_client import BackendClient
 from src.data.models import (
     AuditLog,
     Dialog,
@@ -11,6 +14,26 @@ from src.data.models import (
     TokenBalance,
     TokenTransaction,
 )
+
+
+# Cache for user data (refreshed on each admin request)
+_users_cache: dict[int, str] = {}
+
+
+def get_username(user_id: int) -> str:
+    """Get username from cache or return user_id as string."""
+    return _users_cache.get(user_id, f"User #{user_id}")
+
+
+def format_user_id(model: object, attr: str) -> str:
+    """Format user_id column to show username."""
+    user_id = getattr(model, "user_id", None)
+    if user_id is None:
+        return "-"
+    username = _users_cache.get(user_id)
+    if username:
+        return f"{username} (#{user_id})"
+    return f"#{user_id}"
 
 
 class ModelAdmin(ModelView, model=Model):
@@ -94,8 +117,13 @@ class TokenBalanceAdmin(ModelView, model=TokenBalance):
     ]
     form_include_pk = True  # Show primary key in create/edit forms
 
+    # Show username instead of just user_id
+    column_formatters = {
+        TokenBalance.user_id: format_user_id,
+    }
+
     column_labels = {
-        TokenBalance.user_id: "User ID",
+        TokenBalance.user_id: "User",
         TokenBalance.balance: "Balance",
         TokenBalance.limit: "Limit (null=unlimited)",
         TokenBalance.updated_at: "Updated At",
@@ -105,6 +133,17 @@ class TokenBalanceAdmin(ModelView, model=TokenBalance):
     can_edit = True
     can_delete = False  # Don't allow deleting balances
     can_view_details = True
+
+
+def format_admin_user_id(model: object, attr: str) -> str:
+    """Format admin_user_id column to show username."""
+    admin_user_id = getattr(model, "admin_user_id", None)
+    if admin_user_id is None:
+        return "-"
+    username = _users_cache.get(admin_user_id)
+    if username:
+        return f"{username} (#{admin_user_id})"
+    return f"#{admin_user_id}"
 
 
 class TokenTransactionAdmin(ModelView, model=TokenTransaction):
@@ -132,12 +171,18 @@ class TokenTransactionAdmin(ModelView, model=TokenTransaction):
     ]
     column_default_sort = ("created_at", True)  # Newest first
 
+    # Show username instead of just user_id
+    column_formatters = {
+        TokenTransaction.user_id: format_user_id,
+        TokenTransaction.admin_user_id: format_admin_user_id,
+    }
+
     column_labels = {
         TokenTransaction.id: "ID",
-        TokenTransaction.user_id: "User ID",
+        TokenTransaction.user_id: "User",
         TokenTransaction.amount: "Amount",
         TokenTransaction.reason: "Reason",
-        TokenTransaction.admin_user_id: "Admin ID",
+        TokenTransaction.admin_user_id: "Admin",
         TokenTransaction.created_at: "Created At",
     }
 
@@ -172,9 +217,14 @@ class DialogAdmin(ModelView, model=Dialog):
     ]
     column_default_sort = ("created_at", True)
 
+    # Show username instead of just user_id
+    column_formatters = {
+        Dialog.user_id: format_user_id,
+    }
+
     column_labels = {
         Dialog.id: "ID",
-        Dialog.user_id: "User ID",
+        Dialog.user_id: "User",
         Dialog.title: "Title",
         Dialog.model_name: "Model",
         Dialog.created_at: "Created At",
@@ -259,9 +309,14 @@ class AuditLogAdmin(ModelView, model=AuditLog):
     ]
     column_default_sort = ("created_at", True)
 
+    # Show username instead of just user_id
+    column_formatters = {
+        AuditLog.user_id: format_user_id,
+    }
+
     column_labels = {
         AuditLog.id: "ID",
-        AuditLog.user_id: "User ID",
+        AuditLog.user_id: "User",
         AuditLog.action: "Action",
         AuditLog.resource_type: "Resource Type",
         AuditLog.resource_id: "Resource ID",
@@ -322,3 +377,60 @@ class SystemConfigAdmin(ModelView, model=SystemConfig):
     can_edit = True
     can_delete = True
     can_view_details = True
+
+
+class UsersAdmin(BaseView):
+    """Custom view to display users from omnimap-back with their token balances."""
+
+    name = "Users"
+    icon = "fa-solid fa-users"
+
+    @expose("/users", methods=["GET"])
+    async def users_list(self, request: Request) -> Response:
+        """Display list of users from omnimap-back with their token balances."""
+        global _users_cache
+
+        # Get token from session
+        token = request.session.get("token")
+
+        # Fetch users from backend
+        client = BackendClient(token=token)
+        users = await client.get_all_users()
+
+        # Update global cache
+        _users_cache = {u.id: u.username for u in users}
+
+        # Get token balances from database
+        balances: dict[int, TokenBalance] = {}
+        async with self.session_maker() as session:
+            from sqlalchemy import select
+
+            result = await session.execute(select(TokenBalance))
+            for balance in result.scalars():
+                balances[balance.user_id] = balance
+
+        # Combine user data with balances
+        users_with_balances = []
+        for user in users:
+            balance = balances.get(user.id)
+            users_with_balances.append(
+                {
+                    "id": user.id,
+                    "username": user.username,
+                    "email": user.email,
+                    "is_active": user.is_active,
+                    "is_staff": user.is_staff,
+                    "balance": balance.balance if balance else 0,
+                    "limit": balance.limit if balance else None,
+                    "has_balance": balance is not None,
+                }
+            )
+
+        return await self.templates.TemplateResponse(
+            request,
+            "sqladmin/users_list.html",
+            context={
+                "users": users_with_balances,
+                "users_count": len(users_with_balances),
+            },
+        )

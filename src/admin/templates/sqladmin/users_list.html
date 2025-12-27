@@ -1,0 +1,96 @@
+{% extends "sqladmin/layout.html" %}
+
+{% block content %}
+<div class="container-xl">
+    <div class="page-header d-print-none">
+        <div class="row align-items-center">
+            <div class="col-auto">
+                <h2 class="page-title">
+                    <i class="fa-solid fa-users me-2"></i>
+                    Users ({{ users_count }})
+                </h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-3">
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table table-striped">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Status</th>
+                        <th>Role</th>
+                        <th>Token Balance</th>
+                        <th>Limit</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>{{ user.id }}</td>
+                        <td>
+                            <strong>{{ user.username }}</strong>
+                        </td>
+                        <td class="text-muted">{{ user.email or '-' }}</td>
+                        <td>
+                            {% if user.is_active %}
+                            <span class="badge bg-success">Active</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if user.is_staff %}
+                            <span class="badge bg-primary">Admin</span>
+                            {% else %}
+                            <span class="badge bg-light text-dark">User</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if user.has_balance %}
+                            <span class="{% if user.balance > 0 %}text-success{% else %}text-danger{% endif %}">
+                                {{ "{:,}".format(user.balance) }}
+                            </span>
+                            {% else %}
+                            <span class="text-muted">No balance</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if user.limit is not none %}
+                            {{ "{:,}".format(user.limit) }}
+                            {% else %}
+                            <span class="text-muted">Unlimited</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if user.has_balance %}
+                            <a href="{{ request.url_for('admin:edit', identity='token-balance', pk=user.id) }}"
+                               class="btn btn-sm btn-outline-primary">
+                                <i class="fa-solid fa-edit"></i> Edit Balance
+                            </a>
+                            {% else %}
+                            <a href="{{ request.url_for('admin:create', identity='token-balance') }}?user_id={{ user.id }}"
+                               class="btn btn-sm btn-outline-success">
+                                <i class="fa-solid fa-plus"></i> Create Balance
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-4">
+                            <i class="fa-solid fa-info-circle me-2"></i>
+                            No users found. Make sure you're authenticated and the backend is accessible.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

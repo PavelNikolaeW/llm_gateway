@@ -14,6 +14,7 @@ from src.admin.views import (
     SystemConfigAdmin,
     TokenBalanceAdmin,
     TokenTransactionAdmin,
+    UsersAdmin,
 )
 from src.config.logging import get_logger
 from src.config.settings import settings
@@ -48,6 +49,9 @@ def setup_admin(app: FastAPI) -> Admin:
         authentication_backend=authentication_backend,
         templates_dir=str(TEMPLATES_DIR),
     )
+
+    # Register custom views (must be first for menu order)
+    admin.add_view(UsersAdmin)
 
     # Register model views
     admin.add_view(ModelAdmin)
